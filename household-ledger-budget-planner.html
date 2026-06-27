@@ -138,6 +138,75 @@
     cursor: pointer;
   }
 
+  /* Year strip — sits above the month tabs */
+  .year-strip{
+    display:flex;
+    align-items:center;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .year-nav-btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .year-nav-btn:disabled{
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .year-nav-btn:hover:not(:disabled){ border-color: var(--ink); }
+  .year-label{
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 0 8px;
+    min-width: 64px;
+    text-align: center;
+  }
+
+  /* Year view category breakdown rows */
+  .year-cat-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--paper-stripe);
+    font-size: 13px;
+  }
+  .year-cat-row:last-child{ border-bottom:none; }
+  .year-cat-swatch{
+    width: 10px; height:10px; border-radius:3px; flex: 0 0 auto;
+  }
+  .year-cat-name{
+    flex: 0 0 140px;
+    font-weight: 600;
+  }
+  .year-cat-bar-track{
+    flex: 1 1 auto;
+    height: 8px;
+    background: var(--paper-stripe);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .year-cat-bar-fill{
+    display:block;
+    height: 100%;
+  }
+  .year-cat-amt{
+    flex: 0 0 90px;
+    text-align: right;
+    font-weight: 700;
+  }
+
   /* ---------- Summary row ---------- */
   .summary-row{
     display:grid;
@@ -250,6 +319,8 @@
     overflow:hidden;
     height: 36px;
     margin-top:auto;
+    flex: 1 1 140px;
+    min-width: 110px;
   }
   .type-toggle button{
     flex:1;
@@ -262,6 +333,26 @@
   }
   .type-toggle button.active[data-type="expense"]{ background: var(--rust); color: white; }
   .type-toggle button.active[data-type="income"]{ background: var(--green); color: white; }
+
+  .entry-form-row3{
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: end;
+  }
+  .entry-form-row3 #dateInput{
+    flex: 1 1 130px;
+    min-width: 110px;
+  }
+  .entry-form-row3 #addEntryBtn{
+    flex: 1 1 100%;
+  }
+  @media (min-width: 460px){
+    .entry-form-row3 #addEntryBtn{
+      flex: 1 1 140px;
+    }
+  }
 
   .add-row-btn{
     align-self: end;
@@ -581,8 +672,10 @@
     </div>
   </div>
 
+  <div class="year-strip" id="yearStrip"></div>
   <div class="month-strip" id="monthStrip"></div>
 
+  <div id="monthViewWrap">
   <div class="summary-row" id="summaryRow"></div>
 
   <div class="grid">
@@ -606,13 +699,13 @@
           <label id="catLabel">Category</label>
           <select id="catInput"></select>
         </div>
-        <div class="field" style="grid-column: 1 / -1; display:flex; gap:8px; align-items:end;">
-          <div class="type-toggle" id="typeToggle" style="flex:0 0 160px;">
+        <div class="entry-form-row3">
+          <div class="type-toggle" id="typeToggle">
             <button class="active" data-type="expense">Spent</button>
             <button data-type="income">Earned</button>
           </div>
-          <input type="date" id="dateInput" style="flex:0 0 150px;">
-          <button class="add-row-btn" id="addEntryBtn" style="flex:1;">Add to ledger</button>
+          <input type="date" id="dateInput">
+          <button class="add-row-btn" id="addEntryBtn">Add to ledger</button>
         </div>
       </div>
 
@@ -694,6 +787,9 @@
 
     </div>
   </div>
+  </div><!-- /monthViewWrap -->
+
+  <div id="yearViewWrap" hidden></div>
 
   <footer class="app-footer">
     Your data lives only in this browser tab — nothing is sent anywhere. Use <strong>Save Ledger</strong> often to keep a backup file.
@@ -716,26 +812,37 @@
     { id: 'food',     name: 'Outside Food',      budget: 300,  color: '#5E7C3A' },
     { id: 'housing',  name: 'Housing',           budget: 1200, color: '#2D6A4F' },
     { id: 'savings',  name: 'Savings',           budget: 0,    color: '#D4A24C' },
+    { id: 'loans_repayments', name: 'Loans & Repayments', budget: 0, color: '#8C6B4F' },
   ];
+  const LOANS_CAT_ID = 'loans_repayments';
+
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   function monthKey(d){ return d.slice(0,7); } // "2026-06"
   function todayISO(){ return new Date().toISOString().slice(0,10); }
   function thisMonthKey(){ return todayISO().slice(0,7); }
+  function thisYearKey(){ return todayISO().slice(0,4); }
+  function yearOf(mKey){ return mKey.slice(0,4); }
+  function monthIndexOf(mKey){ return Number(mKey.slice(5,7)) - 1; } // 0-11
+  function buildMonthKey(yearStr, monthIdx0){ return `${yearStr}-${String(monthIdx0+1).padStart(2,'0')}`; }
 
   function defaultState(){
     return {
-      version: 1,
+      version: 3,
       categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
       entries: [],     // {id, date, desc, amount, type:'income'|'expense', cat}
-      goals: [],       // {id, name, target, saved}
-      lent: [],        // {id, person, amount, returned, date}  -- money owed TO you
-      borrowed: [],    // {id, person, amount, repaid, date}    -- money you owe OTHERS
+      goals: [],       // {id, name, target, saved} -- ongoing, not tied to year/month
+      lent: [],        // {id, person, amount, returned, date}  -- ongoing
+      borrowed: [],    // {id, person, amount, repaid, date}    -- ongoing
+      years: [thisYearKey()],     // explicit list of years that exist, e.g. ["2026"]
+      currentYear: thisYearKey(),
       currentMonth: thisMonthKey(),
     };
   }
 
   let state = defaultState();
   let currentType = 'expense';
+  let currentView = 'month'; // 'month' | 'year' -- transient UI state, not saved to file
 
   /* ---------------- Persistence (file based, no localStorage) ---------------- */
   /* ---------------- File System Access (auto-save) where supported ---------------- */
@@ -784,6 +891,38 @@
     }
   }
 
+  function migrateState(loaded){
+    const s = loaded;
+    if(!Array.isArray(s.lent)) s.lent = [];
+    if(!Array.isArray(s.borrowed)) s.borrowed = [];
+    if(!s.currentMonth) s.currentMonth = thisMonthKey();
+
+    // v1 -> v2: visibleMonths (flat list of "YYYY-MM") -> years (list of "YYYY")
+    if(!Array.isArray(s.years)){
+      const yearSet = new Set();
+      if(Array.isArray(s.visibleMonths)){
+        s.visibleMonths.forEach(mk => yearSet.add(yearOf(mk)));
+      }
+      (s.entries||[]).forEach(e => yearSet.add(yearOf(monthKey(e.date))));
+      yearSet.add(yearOf(s.currentMonth));
+      yearSet.add(thisYearKey());
+      s.years = Array.from(yearSet).sort();
+      delete s.visibleMonths;
+    }
+    if(!s.currentYear) s.currentYear = yearOf(s.currentMonth);
+    if(!s.years.includes(s.currentYear)) s.years.push(s.currentYear);
+    s.years.sort();
+
+    // v2 -> v3: ensure the reserved Loans & Repayments category exists
+    if(!Array.isArray(s.categories)) s.categories = [];
+    if(!s.categories.some(c => c.id === LOANS_CAT_ID)){
+      s.categories.push({ id: LOANS_CAT_ID, name: 'Loans & Repayments', budget: 0, color: '#8C6B4F' });
+    }
+
+    s.version = 3;
+    return s;
+  }
+
   async function openLinkedFile(){
     try{
       const [handle] = await window.showOpenFilePicker({
@@ -795,10 +934,7 @@
       if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
         throw new Error('bad shape');
       }
-      state = parsed;
-      if(!state.currentMonth) state.currentMonth = thisMonthKey();
-      if(!Array.isArray(state.lent)) state.lent = [];
-      if(!Array.isArray(state.borrowed)) state.borrowed = [];
+      state = migrateState(parsed);
       linkedFileHandle = handle;
       renderAll();
       updateSaveLoadUI();
@@ -862,10 +998,7 @@
         if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
           throw new Error('bad shape');
         }
-        state = parsed;
-        if(!state.currentMonth) state.currentMonth = thisMonthKey();
-        if(!Array.isArray(state.lent)) state.lent = [];
-        if(!Array.isArray(state.borrowed)) state.borrowed = [];
+        state = migrateState(parsed);
         renderAll();
         showToast('Ledger loaded ✓');
       }catch(err){
@@ -892,15 +1025,29 @@
   }
   function uid(){ return Math.random().toString(36).slice(2,10); }
 
+  function logLoanEntry(type, desc, amount){
+    // type: 'income' | 'expense' -- always filed under the reserved Loans & Repayments category
+    const date = todayISO();
+    state.entries.push({
+      id: uid(),
+      date,
+      desc,
+      amount,
+      type,
+      cat: LOANS_CAT_ID
+    });
+    const entryYear = yearOf(monthKey(date));
+    if(!state.years.includes(entryYear)){ state.years.push(entryYear); state.years.sort(); }
+    state.currentYear = entryYear;
+    state.currentMonth = monthKey(date);
+  }
+
   function entriesForMonth(mKey){
     return state.entries.filter(e => monthKey(e.date) === mKey);
   }
 
-  function allMonthKeys(){
-    const set = new Set(state.entries.map(e => monthKey(e.date)));
-    set.add(state.currentMonth);
-    set.add(thisMonthKey());
-    return Array.from(set).sort();
+  function entriesForYear(yearStr){
+    return state.entries.filter(e => yearOf(monthKey(e.date)) === yearStr);
   }
 
   function catName(id){
@@ -914,43 +1061,110 @@
 
   /* ---------------- Rendering ---------------- */
   function renderAll(){
+    renderYearStrip();
     renderMonthStrip();
-    renderSummary();
-    renderCategorySelect();
-    renderRegister();
-    renderJars();
-    renderCatManage();
-    renderGoals();
-    renderLent();
-    renderBorrowed();
-    renderChart();
+    const monthWrap = document.getElementById('monthViewWrap');
+    const yearWrap = document.getElementById('yearViewWrap');
+    if(currentView === 'year'){
+      monthWrap.hidden = true;
+      yearWrap.hidden = false;
+      renderYearView();
+    }else{
+      monthWrap.hidden = false;
+      yearWrap.hidden = true;
+      renderSummary();
+      renderCategorySelect();
+      renderRegister();
+      renderJars();
+      renderCatManage();
+      renderGoals();
+      renderLent();
+      renderBorrowed();
+      renderChart();
+    }
     scheduleAutosave();
+  }
+
+  function renderYearStrip(){
+    const wrap = document.getElementById('yearStrip');
+    wrap.innerHTML = '';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'year-nav-btn';
+    prevBtn.textContent = '‹';
+    prevBtn.title = 'Previous year';
+    const years = state.years.slice().sort();
+    const idx = years.indexOf(state.currentYear);
+    prevBtn.disabled = idx <= 0;
+    prevBtn.addEventListener('click', () => {
+      state.currentYear = years[idx-1];
+      state.currentMonth = buildMonthKey(state.currentYear, monthIndexOf(state.currentMonth));
+      renderAll();
+    });
+    wrap.appendChild(prevBtn);
+
+    const label = document.createElement('span');
+    label.className = 'year-label';
+    label.textContent = state.currentYear;
+    wrap.appendChild(label);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'year-nav-btn';
+    nextBtn.textContent = '›';
+    nextBtn.title = 'Next year';
+    nextBtn.disabled = idx >= years.length - 1;
+    nextBtn.addEventListener('click', () => {
+      state.currentYear = years[idx+1];
+      state.currentMonth = buildMonthKey(state.currentYear, monthIndexOf(state.currentMonth));
+      renderAll();
+    });
+    wrap.appendChild(nextBtn);
+
+    const addYearBtn = document.createElement('button');
+    addYearBtn.className = 'btn small ghost';
+    addYearBtn.style.marginLeft = '10px';
+    addYearBtn.textContent = '+ Add Year';
+    addYearBtn.addEventListener('click', () => {
+      const maxYear = Math.max(...state.years.map(Number));
+      const newYear = String(maxYear + 1);
+      if(!state.years.includes(newYear)) state.years.push(newYear);
+      state.years.sort();
+      state.currentYear = newYear;
+      state.currentMonth = buildMonthKey(newYear, monthIndexOf(state.currentMonth));
+      renderAll();
+    });
+    wrap.appendChild(addYearBtn);
+
+    const yearViewBtn = document.createElement('button');
+    yearViewBtn.className = 'btn small ' + (currentView === 'year' ? 'primary' : 'ghost');
+    yearViewBtn.style.marginLeft = 'auto';
+    yearViewBtn.textContent = currentView === 'year' ? '◂ Back to Month' : `📊 Year View (${state.currentYear})`;
+    yearViewBtn.addEventListener('click', () => {
+      currentView = currentView === 'year' ? 'month' : 'year';
+      renderAll();
+    });
+    wrap.appendChild(yearViewBtn);
   }
 
   function renderMonthStrip(){
     const wrap = document.getElementById('monthStrip');
     wrap.innerHTML = '';
-    const keys = allMonthKeys();
-    keys.forEach(k => {
+    if(currentView === 'year'){
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = '';
+    MONTH_NAMES.forEach((name, idx) => {
+      const k = buildMonthKey(state.currentYear, idx);
       const btn = document.createElement('button');
       btn.className = 'month-tab' + (k === state.currentMonth ? ' active' : '');
-      const d = new Date(k + '-01T00:00:00');
-      btn.textContent = d.toLocaleDateString(undefined, {month:'short', year:'numeric'});
-      btn.addEventListener('click', () => { state.currentMonth = k; renderAll(); });
+      btn.textContent = name;
+      btn.addEventListener('click', () => {
+        state.currentMonth = k;
+        renderAll();
+      });
       wrap.appendChild(btn);
     });
-    const addBtn = document.createElement('button');
-    addBtn.className = 'month-tab-add';
-    addBtn.textContent = '+';
-    addBtn.title = 'Add next month';
-    addBtn.addEventListener('click', () => {
-      const last = keys[keys.length-1];
-      const d = new Date(last + '-01T00:00:00');
-      d.setMonth(d.getMonth()+1);
-      state.currentMonth = d.toISOString().slice(0,7);
-      renderAll();
-    });
-    wrap.appendChild(addBtn);
   }
 
   function renderSummary(){
@@ -1235,8 +1449,24 @@
           const amt = Number(inp.value);
           if(!amt || amt <= 0) return;
           const item = list.find(x=>x.id===id);
-          item[paidField] = Math.min((item[paidField]||0) + amt, item.amount);
-          if(kind==='lent') renderLent(); else renderBorrowed();
+          const before = item[paidField] || 0;
+          const after = Math.min(before + amt, item.amount);
+          const actuallyLogged = after - before; // capped to what's actually outstanding
+          item[paidField] = after;
+
+          if(actuallyLogged > 0){
+            if(kind === 'lent'){
+              logLoanEntry('income', `Repayment from ${item.person}`, actuallyLogged);
+            }else{
+              logLoanEntry('expense', `Repaid to ${item.person}`, actuallyLogged);
+            }
+          }
+          renderAll();
+          if(kind === 'lent'){
+            showToast(`Logged ₹${actuallyLogged} received from ${item.person} as income ✓`);
+          }else{
+            showToast(`Logged ₹${actuallyLogged} paid to ${item.person} as an expense ✓`);
+          }
         });
       }
       card.querySelector('.loan-del-btn').addEventListener('click', () => {
@@ -1352,6 +1582,100 @@
     else if(currentChart === 'budgetactual') renderChartBudgetActual();
   }
 
+  /* ---------------- Year View ---------------- */
+  function renderYearView(){
+    const wrap = document.getElementById('yearViewWrap');
+    const yearEntries = entriesForYear(state.currentYear);
+    const income = yearEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+    const expense = yearEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+    const net = income - expense;
+    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0) * 12;
+
+    // per-month totals for bar chart
+    const monthTotals = MONTH_NAMES.map((name, idx) => {
+      const mk = buildMonthKey(state.currentYear, idx);
+      const mEntries = entriesForMonth(mk);
+      const inc = mEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+      const exp = mEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+      return { name, inc, exp };
+    });
+    const maxVal = Math.max(1, ...monthTotals.map(m => Math.max(m.inc, m.exp)));
+
+    const barW = 14, gap = 26, chartH = 160, baseline = chartH + 20;
+    const svgW = monthTotals.length * gap + 20;
+    const bars = monthTotals.map((m, i) => {
+      const x = 20 + i * gap;
+      const incH = (m.inc / maxVal) * chartH;
+      const expH = (m.exp / maxVal) * chartH;
+      return `
+        <rect x="${x}" y="${(baseline-incH).toFixed(1)}" width="${barW/2-1}" height="${incH.toFixed(1)}" fill="#2D6A4F" rx="1"/>
+        <rect x="${x+barW/2}" y="${(baseline-expH).toFixed(1)}" width="${barW/2-1}" height="${expH.toFixed(1)}" fill="#B5481F" rx="1"/>
+        <text x="${x+barW/2}" y="${baseline+14}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A5A52">${m.name}</text>
+      `;
+    }).join('');
+
+    // category totals across the whole year (expenses only)
+    const byCat = {};
+    yearEntries.filter(e=>e.type==='expense').forEach(e => { byCat[e.cat] = (byCat[e.cat]||0) + e.amount; });
+    const catTotal = Object.values(byCat).reduce((a,b)=>a+b,0);
+    const catRows = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]).map(catId => {
+      const pct = catTotal > 0 ? (byCat[catId]/catTotal*100) : 0;
+      return `
+        <div class="year-cat-row">
+          <span class="year-cat-swatch" style="background:${catColor(catId)};"></span>
+          <span class="year-cat-name">${escapeHTML(catName(catId))}</span>
+          <span class="year-cat-bar-track"><span class="year-cat-bar-fill" style="width:${pct.toFixed(1)}%; background:${catColor(catId)};"></span></span>
+          <span class="year-cat-amt num">${fmt(byCat[catId])}</span>
+        </div>
+      `;
+    }).join('') || `<div class="no-jars">No expenses logged yet in ${state.currentYear}.</div>`;
+
+    wrap.innerHTML = `
+      <div class="summary-row">
+        <div class="stat-card income">
+          <div class="label">Annual Income</div>
+          <div class="value num">${fmt(income)}</div>
+        </div>
+        <div class="stat-card expense">
+          <div class="label">Annual Spent</div>
+          <div class="value num">${fmt(expense)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Annual Net</div>
+          <div class="value num ${net>=0?'positive':'negative'}">${fmt(net)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Yearly Budget</div>
+          <div class="value num">${fmt(totalBudget)}</div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:22px;">
+        <div class="panel-head">
+          <h2>${state.currentYear} at a Glance</h2>
+          <span style="display:flex; gap:14px; font-size:11.5px; color:var(--ink-soft);">
+            <span><span style="display:inline-block;width:8px;height:8px;background:#2D6A4F;border-radius:2px;margin-right:4px;"></span>Income</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#B5481F;border-radius:2px;margin-right:4px;"></span>Expense</span>
+          </span>
+        </div>
+        <div style="padding: 18px; overflow-x:auto;">
+          <svg viewBox="0 0 ${svgW} ${baseline+24}" style="width:100%; min-width:520px; height:200px;">
+            ${bars}
+          </svg>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Where ${state.currentYear} Went</h2>
+        </div>
+        <div style="padding: 14px 18px;">
+          ${catRows}
+        </div>
+      </div>
+    `;
+  }
+
   /* ---------------- Event wiring ---------------- */
   function updateCatInputState(){
     const catSelect = document.getElementById('catInput');
@@ -1405,8 +1729,11 @@
       cat: currentType === 'expense' ? cat : 'income'
     });
 
-    // jump to that entry's month if different
+    // jump to that entry's month/year if different
     state.currentMonth = monthKey(date);
+    const entryYear = yearOf(state.currentMonth);
+    if(!state.years.includes(entryYear)){ state.years.push(entryYear); state.years.sort(); }
+    state.currentYear = entryYear;
 
     document.getElementById('descInput').value = '';
     document.getElementById('amtInput').value = '';
@@ -1476,7 +1803,9 @@
         return false;
       }
       state.lent.push({ id: uid(), person, amount, returned: 0, date: todayISO() });
-      renderLent();
+      logLoanEntry('expense', `Lent to ${person}`, amount);
+      renderAll();
+      showToast(`Logged ₹${amount} lent to ${person} as an expense ✓`);
     }
   });
 
@@ -1492,7 +1821,9 @@
         return false;
       }
       state.borrowed.push({ id: uid(), person, amount, repaid: 0, date: todayISO() });
-      renderBorrowed();
+      logLoanEntry('income', `Borrowed from ${person}`, amount);
+      renderAll();
+      showToast(`Logged ₹${amount} borrowed from ${person} as income ✓`);
     }
   });
 
