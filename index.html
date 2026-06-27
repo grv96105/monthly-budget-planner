@@ -126,6 +126,36 @@
     display: none;
   }
 
+  .save-bar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--line);
+  }
+  .save-bar-title{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .save-bar-actions{
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 860px){
+    .save-bar-title{ display: none; }
+    .save-bar-actions{ width: 100%; }
+    .save-bar-actions .btn{ flex: 1 1 auto; }
+  }
+  @media (min-width: 861px){
+    .save-bar-title{ display: none; } /* sidebar brand already shows the title on desktop */
+  }
+
   .ios-banner{
     background: var(--brass-soft);
     border: 1px solid var(--brass);
@@ -764,6 +794,9 @@
     <button class="nav-item" data-module="dashboard">
       <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
     </button>
+    <button class="nav-item" data-module="yearview">
+      <span class="nav-icon">📊</span><span class="nav-label">Year View</span>
+    </button>
     <button class="nav-item" data-module="transactions">
       <span class="nav-icon">📝</span><span class="nav-label">Transactions</span>
     </button>
@@ -779,25 +812,26 @@
     <button class="nav-item" data-module="iowe">
       <span class="nav-icon">💳</span><span class="nav-label">I Owe</span>
     </button>
-    <div class="sidebar-footer">
-      <button class="btn ghost small" id="linkFileBtn" style="width:100%; margin-bottom:6px;">Auto-Save to a File…</button>
-      <button class="btn ghost small" id="loadBtn" style="width:100%; margin-bottom:6px;">Open File</button>
-      <button class="btn primary small" id="saveBtn" style="width:100%;">Save Ledger</button>
-      <input type="file" id="fileInput" accept=".json">
-    </div>
   </nav>
 
   <div class="main-area">
 
+    <div class="save-bar">
+      <span class="save-bar-title">📒 Household Ledger</span>
+      <div class="save-bar-actions">
+        <button class="btn ghost small" id="linkFileBtn">Auto-Save to a File…</button>
+        <button class="btn ghost small" id="loadBtn">Open File</button>
+        <button class="btn primary small" id="saveBtn">Save Ledger</button>
+        <input type="file" id="fileInput" accept=".json">
+      </div>
+    </div>
+
     <div id="iosAutosaveBanner" class="ios-banner" hidden>
-      📱 Auto-save to a file isn't available in this browser. Use <strong>Save Ledger</strong> / <strong>Open File</strong> in the menu instead — your data stays safe either way.
+      📱 Auto-save to a file isn't available in this browser. Use <strong>Save Ledger</strong> / <strong>Open File</strong> above instead — your data stays safe either way.
     </div>
 
     <div id="module-dashboard" class="module-screen">
-      <div class="dashboard-toprow">
-        <div class="year-strip" id="yearStrip"></div>
-        <button class="btn small" id="yearViewToggleBtn">📊 Year View</button>
-      </div>
+      <div class="year-strip" id="yearStrip"></div>
       <div class="month-strip" id="monthStrip"></div>
       <div id="monthViewWrap">
         <div class="summary-row" id="summaryRow"></div>
@@ -814,7 +848,11 @@
           <div class="chart-legend" id="chartLegend"></div>
         </div>
       </div>
-      <div id="yearViewWrap" hidden></div>
+    </div>
+
+    <div id="module-yearview" class="module-screen" hidden>
+      <div class="year-strip" id="yearStrip4"></div>
+      <div id="yearViewWrap"></div>
     </div>
 
     <div id="module-transactions" class="module-screen" hidden>
@@ -933,6 +971,9 @@
     <button class="bottom-nav-item active" data-module="dashboard">
       <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
     </button>
+    <button class="bottom-nav-item" data-module="yearview">
+      <span class="nav-icon">📊</span><span class="nav-label">Year</span>
+    </button>
     <button class="bottom-nav-item" data-module="transactions">
       <span class="nav-icon">📝</span><span class="nav-label">Entries</span>
     </button>
@@ -999,7 +1040,7 @@
 
   let state = defaultState();
   let currentType = 'expense';
-  let currentView = 'month'; // 'month' | 'year' -- transient UI state, not saved to file
+  // (Year View is now its own module; no separate toggle state needed)
 
   /* ---------------- Persistence (file based, no localStorage) ---------------- */
   /* ---------------- File System Access (auto-save) where supported ---------------- */
@@ -1220,32 +1261,19 @@
   function renderAll(){
     renderYearStrip();
     renderMonthStrip();
-    const monthWrap = document.getElementById('monthViewWrap');
-    const yearWrap = document.getElementById('yearViewWrap');
-    const dashMonthStrip = document.getElementById('monthStrip');
-    const yvBtn = document.getElementById('yearViewToggleBtn');
-    if(currentView === 'year'){
-      monthWrap.hidden = true;
-      yearWrap.hidden = false;
-      if(dashMonthStrip) dashMonthStrip.style.display = 'none';
-      if(yvBtn){ yvBtn.textContent = '◂ Back to Month'; yvBtn.classList.add('primary'); }
-      renderYearView();
-    }else{
-      monthWrap.hidden = false;
-      yearWrap.hidden = true;
-      if(dashMonthStrip) dashMonthStrip.style.display = '';
-      if(yvBtn){ yvBtn.textContent = '📊 Year View'; yvBtn.classList.remove('primary'); }
-      renderSummary();
-      renderCategorySelect();
-      renderRegister();
-      renderJars();
-      renderCatManage();
-      renderGoals();
-      renderLent();
-      renderBorrowed();
-      renderChart();
-    }
+    renderSummary();
+    renderCategorySelect();
+    renderRegister();
+    renderJars();
+    renderCatManage();
+    renderGoals();
+    renderLent();
+    renderBorrowed();
+    renderChart();
     renderLoanSummaries();
+    if(currentModule === 'yearview'){
+      renderYearView();
+    }
     scheduleAutosave();
   }
 
@@ -1305,6 +1333,7 @@
     buildYearStripInto('yearStrip');
     buildYearStripInto('yearStrip2');
     buildYearStripInto('yearStrip3');
+    buildYearStripInto('yearStrip4');
   }
 
   function buildMonthStripInto(containerId){
@@ -2060,7 +2089,7 @@
 
   /* ---------------- Module navigation ---------------- */
   let currentModule = 'dashboard';
-  const MODULE_IDS = ['dashboard','transactions','jars','goals','owedtome','iowe'];
+  const MODULE_IDS = ['dashboard','yearview','transactions','jars','goals','owedtome','iowe'];
 
   function switchModule(mod){
     if(!MODULE_IDS.includes(mod)) return;
@@ -2072,6 +2101,9 @@
     document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
       btn.classList.toggle('active', btn.getAttribute('data-module') === mod);
     });
+    if(mod === 'yearview'){
+      renderYearView();
+    }
     // close mobile sidebar drawer if open
     document.getElementById('sidebar').classList.remove('open');
     window.scrollTo({top: 0, behavior: 'instant'});
@@ -2079,11 +2111,6 @@
 
   document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
     btn.addEventListener('click', () => switchModule(btn.getAttribute('data-module')));
-  });
-
-  document.getElementById('yearViewToggleBtn').addEventListener('click', () => {
-    currentView = currentView === 'year' ? 'month' : 'year';
-    renderAll();
   });
 
   /* ---------------- iOS / unsupported-browser auto-save banner ---------------- */
