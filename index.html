@@ -39,41 +39,137 @@
 
   .num{ font-family:'JetBrains Mono', monospace; font-weight:600; letter-spacing:-0.01em; }
 
-  /* ---------- Header / Ledger tab strip ---------- */
-  .app{
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 28px 24px 80px;
+  /* ---------- App shell: sidebar (desktop) + bottom nav (mobile) ---------- */
+  .app-shell{
+    display: flex;
+    min-height: 100vh;
   }
 
-  .masthead{
+  .sidebar{
+    width: 220px;
+    flex: 0 0 220px;
+    background: var(--card);
+    border-right: 1.5px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-brand{
     display:flex;
-    align-items: baseline;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 22px;
-    border-bottom: 3px solid var(--ink);
-    padding-bottom: 14px;
-  }
-  .masthead h1{
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 30px;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
-  .masthead .sub{
-    font-size: 12.5px;
-    color: var(--ink-soft);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-  }
-  .masthead-actions{
-    display:flex;
-    gap:8px;
     align-items:center;
+    gap: 10px;
+    margin-bottom: 22px;
+    padding: 0 6px;
+  }
+  .brand-mark{ font-size: 26px; line-height:1; }
+  .brand-title{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size: 15px;
+    line-height: 1.15;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family:'Inter',sans-serif;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover{ background: var(--paper-stripe); color: var(--ink); }
+  .nav-item.active{
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .nav-icon{ font-size: 17px; line-height:1; flex: 0 0 auto; }
+  .sidebar-footer{
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  #fileInput{ display:none; }
+
+  .main-area{
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 24px 28px 90px;
+    max-width: 980px;
+  }
+
+  .module-screen{ animation: fadeIn .15s ease; }
+  @keyframes fadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
+
+  .dashboard-toprow{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .dashboard-toprow .year-strip{ margin-bottom: 0; flex: 1 1 auto; }
+
+  /* Bottom nav: hidden on desktop, shown on mobile */
+  .bottom-nav{
+    display: none;
+  }
+
+  .ios-banner{
+    background: var(--brass-soft);
+    border: 1px solid var(--brass);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: #6B4F1E;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 860px){
+    .sidebar{ display: none; }
+    .main-area{
+      padding: 16px 14px 84px;
+      max-width: 100%;
+    }
+    .bottom-nav{
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card);
+      border-top: 1.5px solid var(--line);
+      z-index: 40;
+      padding: 4px 2px;
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
+    }
+    .bottom-nav-item{
+      flex: 1 1 0;
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      gap: 2px;
+      background: none;
+      border: none;
+      padding: 6px 2px;
+      font-family:'Inter',sans-serif;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .bottom-nav-item .nav-icon{ font-size: 19px; }
+    .bottom-nav-item .nav-label{ font-size: 9.5px; font-weight: 700; }
+    .bottom-nav-item.active{ color: var(--ink); }
+    .bottom-nav-item.active .nav-icon{ transform: translateY(-1px); }
   }
 
   .btn{
@@ -628,8 +724,7 @@
     border-top: 1px solid var(--line);
   }
 
-  /* file input hidden */
-  #fileInput{ display:none; }
+  /* file input hidden — see top of stylesheet */
 
   .toast{
     position: fixed;
@@ -657,64 +752,110 @@
 </head>
 <body>
 
-<div class="app">
+<div class="app-shell">
 
-  <div class="masthead">
-    <div>
-      <h1>The Household Ledger</h1>
-      <div class="sub">a budget kept by hand, run by code</div>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">📒</div>
+      <div class="brand-text">
+        <div class="brand-title">Household<br>Ledger</div>
+      </div>
     </div>
-    <div class="masthead-actions">
-      <button class="btn ghost" id="linkFileBtn">Auto-Save to a File…</button>
-      <button class="btn ghost" id="loadBtn">Open File</button>
-      <button class="btn primary" id="saveBtn">Save Ledger</button>
+    <button class="nav-item" data-module="dashboard">
+      <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" data-module="transactions">
+      <span class="nav-icon">📝</span><span class="nav-label">Transactions</span>
+    </button>
+    <button class="nav-item" data-module="jars">
+      <span class="nav-icon">🫙</span><span class="nav-label">Budget Jars</span>
+    </button>
+    <button class="nav-item" data-module="goals">
+      <span class="nav-icon">🎯</span><span class="nav-label">Savings Goals</span>
+    </button>
+    <button class="nav-item" data-module="owedtome">
+      <span class="nav-icon">🤝</span><span class="nav-label">Owed to Me</span>
+    </button>
+    <button class="nav-item" data-module="iowe">
+      <span class="nav-icon">💳</span><span class="nav-label">I Owe</span>
+    </button>
+    <div class="sidebar-footer">
+      <button class="btn ghost small" id="linkFileBtn" style="width:100%; margin-bottom:6px;">Auto-Save to a File…</button>
+      <button class="btn ghost small" id="loadBtn" style="width:100%; margin-bottom:6px;">Open File</button>
+      <button class="btn primary small" id="saveBtn" style="width:100%;">Save Ledger</button>
       <input type="file" id="fileInput" accept=".json">
     </div>
-  </div>
+  </nav>
 
-  <div class="year-strip" id="yearStrip"></div>
-  <div class="month-strip" id="monthStrip"></div>
+  <div class="main-area">
 
-  <div id="monthViewWrap">
-  <div class="summary-row" id="summaryRow"></div>
-
-  <div class="grid">
-    <!-- LEFT: register -->
-    <div class="panel">
-      <div class="panel-head">
-        <h2>Entries</h2>
-        <span class="sub" style="font-size:11px;color:var(--ink-soft);font-weight:600;" id="entryCount"></span>
-      </div>
-
-      <div class="entry-form">
-        <div class="field">
-          <label>Description</label>
-          <input type="text" id="descInput" placeholder="Grocery run, paycheck…">
-        </div>
-        <div class="field">
-          <label>Amount</label>
-          <input type="number" id="amtInput" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div class="field">
-          <label id="catLabel">Category</label>
-          <select id="catInput"></select>
-        </div>
-        <div class="entry-form-row3">
-          <div class="type-toggle" id="typeToggle">
-            <button class="active" data-type="expense">Spent</button>
-            <button data-type="income">Earned</button>
-          </div>
-          <input type="date" id="dateInput">
-          <button class="add-row-btn" id="addEntryBtn">Add to ledger</button>
-        </div>
-      </div>
-
-      <div class="register" id="register"></div>
+    <div id="iosAutosaveBanner" class="ios-banner" hidden>
+      📱 Auto-save to a file isn't available in this browser. Use <strong>Save Ledger</strong> / <strong>Open File</strong> in the menu instead — your data stays safe either way.
     </div>
 
-    <!-- RIGHT: jars, goals, chart -->
-    <div style="display:flex; flex-direction:column; gap:22px;">
+    <div id="module-dashboard" class="module-screen">
+      <div class="dashboard-toprow">
+        <div class="year-strip" id="yearStrip"></div>
+        <button class="btn small" id="yearViewToggleBtn">📊 Year View</button>
+      </div>
+      <div class="month-strip" id="monthStrip"></div>
+      <div id="monthViewWrap">
+        <div class="summary-row" id="summaryRow"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Charts</h2>
+          </div>
+          <div class="chart-tabs" id="chartTabs">
+            <button class="chart-tab active" data-chart="category">By Category</button>
+            <button class="chart-tab" data-chart="incomeexpense">Income vs Expense</button>
+            <button class="chart-tab" data-chart="budgetactual">Budget vs Actual</button>
+          </div>
+          <div id="chartWrap" style="padding: 10px 18px 0;"></div>
+          <div class="chart-legend" id="chartLegend"></div>
+        </div>
+      </div>
+      <div id="yearViewWrap" hidden></div>
+    </div>
 
+    <div id="module-transactions" class="module-screen" hidden>
+      <div class="year-strip" id="yearStrip2"></div>
+      <div class="month-strip" id="monthStrip2"></div>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Entries</h2>
+          <span class="sub" style="font-size:11px;color:var(--ink-soft);font-weight:600;" id="entryCount"></span>
+        </div>
+
+        <div class="entry-form">
+          <div class="field">
+            <label>Description</label>
+            <input type="text" id="descInput" placeholder="Grocery run, paycheck…">
+          </div>
+          <div class="field">
+            <label>Amount</label>
+            <input type="number" id="amtInput" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="field">
+            <label id="catLabel">Category</label>
+            <select id="catInput"></select>
+          </div>
+          <div class="entry-form-row3">
+            <div class="type-toggle" id="typeToggle">
+              <button class="active" data-type="expense">Spent</button>
+              <button data-type="income">Earned</button>
+            </div>
+            <input type="date" id="dateInput">
+            <button class="add-row-btn" id="addEntryBtn">Add to ledger</button>
+          </div>
+        </div>
+
+        <div class="register" id="register"></div>
+      </div>
+    </div>
+
+    <div id="module-jars" class="module-screen" hidden>
+      <div class="year-strip" id="yearStrip3"></div>
+      <div class="month-strip" id="monthStrip3"></div>
       <div class="panel">
         <div class="panel-head">
           <h2>Budget Jars</h2>
@@ -723,7 +864,9 @@
         <div id="jarsWrap"></div>
         <div class="cat-manage" id="catManage"></div>
       </div>
+    </div>
 
+    <div id="module-goals" class="module-screen" hidden>
       <div class="panel">
         <div class="panel-head">
           <h2>Savings Goals</h2>
@@ -739,7 +882,10 @@
         </form>
         <div id="goalsWrap"></div>
       </div>
+    </div>
 
+    <div id="module-owedtome" class="module-screen" hidden>
+      <div class="summary-row" id="owedToMeSummaryRow" style="grid-template-columns: 1fr;"></div>
       <div class="panel">
         <div class="panel-head">
           <h2>Money Owed to Me</h2>
@@ -748,6 +894,7 @@
         <form class="inline-add-form" id="lentForm" hidden>
           <input type="text" id="lentPersonInput" placeholder="Who owes you?" required>
           <input type="number" id="lentAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
+          <input type="date" id="lentDateInput" required>
           <div class="inline-add-actions">
             <button type="submit" class="btn small primary">Add</button>
             <button type="button" class="btn small ghost" id="lentFormCancel">Cancel</button>
@@ -755,7 +902,10 @@
         </form>
         <div id="lentWrap"></div>
       </div>
+    </div>
 
+    <div id="module-iowe" class="module-screen" hidden>
+      <div class="summary-row" id="iOweSummaryRow" style="grid-template-columns: 1fr;"></div>
       <div class="panel">
         <div class="panel-head">
           <h2>Money I Owe</h2>
@@ -764,6 +914,7 @@
         <form class="inline-add-form" id="borrowedForm" hidden>
           <input type="text" id="borrowedPersonInput" placeholder="Who do you owe?" required>
           <input type="number" id="borrowedAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
+          <input type="date" id="borrowedDateInput" required>
           <div class="inline-add-actions">
             <button type="submit" class="btn small primary">Add</button>
             <button type="button" class="btn small ghost" id="borrowedFormCancel">Cancel</button>
@@ -771,32 +922,38 @@
         </form>
         <div id="borrowedWrap"></div>
       </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Charts</h2>
-        </div>
-        <div class="chart-tabs" id="chartTabs">
-          <button class="chart-tab active" data-chart="category">By Category</button>
-          <button class="chart-tab" data-chart="incomeexpense">Income vs Expense</button>
-          <button class="chart-tab" data-chart="budgetactual">Budget vs Actual</button>
-        </div>
-        <div id="chartWrap" style="padding: 10px 18px 0;"></div>
-        <div class="chart-legend" id="chartLegend"></div>
-      </div>
-
     </div>
+
+    <footer class="app-footer">
+      Your data lives only in this browser tab — nothing is sent anywhere. Use <strong>Save Ledger</strong> often to keep a backup file.
+    </footer>
   </div>
-  </div><!-- /monthViewWrap -->
 
-  <div id="yearViewWrap" hidden></div>
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" data-module="dashboard">
+      <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+    </button>
+    <button class="bottom-nav-item" data-module="transactions">
+      <span class="nav-icon">📝</span><span class="nav-label">Entries</span>
+    </button>
+    <button class="bottom-nav-item" data-module="jars">
+      <span class="nav-icon">🫙</span><span class="nav-label">Jars</span>
+    </button>
+    <button class="bottom-nav-item" data-module="goals">
+      <span class="nav-icon">🎯</span><span class="nav-label">Goals</span>
+    </button>
+    <button class="bottom-nav-item" data-module="owedtome">
+      <span class="nav-icon">🤝</span><span class="nav-label">Owed</span>
+    </button>
+    <button class="bottom-nav-item" data-module="iowe">
+      <span class="nav-icon">💳</span><span class="nav-label">I Owe</span>
+    </button>
+  </nav>
 
-  <footer class="app-footer">
-    Your data lives only in this browser tab — nothing is sent anywhere. Use <strong>Save Ledger</strong> often to keep a backup file.
-  </footer>
 </div>
 
 <div class="toast" id="toast"></div>
+
 
 <script>
 (function(){
@@ -1025,9 +1182,9 @@
   }
   function uid(){ return Math.random().toString(36).slice(2,10); }
 
-  function logLoanEntry(type, desc, amount){
+  function logLoanEntry(type, desc, amount, date){
     // type: 'income' | 'expense' -- always filed under the reserved Loans & Repayments category
-    const date = todayISO();
+    date = date || todayISO();
     state.entries.push({
       id: uid(),
       date,
@@ -1065,13 +1222,19 @@
     renderMonthStrip();
     const monthWrap = document.getElementById('monthViewWrap');
     const yearWrap = document.getElementById('yearViewWrap');
+    const dashMonthStrip = document.getElementById('monthStrip');
+    const yvBtn = document.getElementById('yearViewToggleBtn');
     if(currentView === 'year'){
       monthWrap.hidden = true;
       yearWrap.hidden = false;
+      if(dashMonthStrip) dashMonthStrip.style.display = 'none';
+      if(yvBtn){ yvBtn.textContent = '◂ Back to Month'; yvBtn.classList.add('primary'); }
       renderYearView();
     }else{
       monthWrap.hidden = false;
       yearWrap.hidden = true;
+      if(dashMonthStrip) dashMonthStrip.style.display = '';
+      if(yvBtn){ yvBtn.textContent = '📊 Year View'; yvBtn.classList.remove('primary'); }
       renderSummary();
       renderCategorySelect();
       renderRegister();
@@ -1082,11 +1245,13 @@
       renderBorrowed();
       renderChart();
     }
+    renderLoanSummaries();
     scheduleAutosave();
   }
 
-  function renderYearStrip(){
-    const wrap = document.getElementById('yearStrip');
+  function buildYearStripInto(containerId){
+    const wrap = document.getElementById(containerId);
+    if(!wrap) return;
     wrap.innerHTML = '';
 
     const prevBtn = document.createElement('button');
@@ -1134,26 +1299,18 @@
       renderAll();
     });
     wrap.appendChild(addYearBtn);
-
-    const yearViewBtn = document.createElement('button');
-    yearViewBtn.className = 'btn small ' + (currentView === 'year' ? 'primary' : 'ghost');
-    yearViewBtn.style.marginLeft = 'auto';
-    yearViewBtn.textContent = currentView === 'year' ? '◂ Back to Month' : `📊 Year View (${state.currentYear})`;
-    yearViewBtn.addEventListener('click', () => {
-      currentView = currentView === 'year' ? 'month' : 'year';
-      renderAll();
-    });
-    wrap.appendChild(yearViewBtn);
   }
 
-  function renderMonthStrip(){
-    const wrap = document.getElementById('monthStrip');
+  function renderYearStrip(){
+    buildYearStripInto('yearStrip');
+    buildYearStripInto('yearStrip2');
+    buildYearStripInto('yearStrip3');
+  }
+
+  function buildMonthStripInto(containerId){
+    const wrap = document.getElementById(containerId);
+    if(!wrap) return;
     wrap.innerHTML = '';
-    if(currentView === 'year'){
-      wrap.style.display = 'none';
-      return;
-    }
-    wrap.style.display = '';
     MONTH_NAMES.forEach((name, idx) => {
       const k = buildMonthKey(state.currentYear, idx);
       const btn = document.createElement('button');
@@ -1165,6 +1322,12 @@
       });
       wrap.appendChild(btn);
     });
+  }
+
+  function renderMonthStrip(){
+    buildMonthStripInto('monthStrip');
+    buildMonthStripInto('monthStrip2');
+    buildMonthStripInto('monthStrip3');
   }
 
   function renderSummary(){
@@ -1485,6 +1648,30 @@
   function renderLent(){ renderLoanList('lentWrap', state.lent, 'lent'); }
   function renderBorrowed(){ renderLoanList('borrowedWrap', state.borrowed, 'borrowed'); }
 
+  function renderLoanSummaries(){
+    const owedToMeTotal = state.lent.reduce((s,x) => s + Math.max(x.amount - (x.returned||0), 0), 0);
+    const iOweTotal = state.borrowed.reduce((s,x) => s + Math.max(x.amount - (x.repaid||0), 0), 0);
+
+    const owedWrap = document.getElementById('owedToMeSummaryRow');
+    if(owedWrap){
+      owedWrap.innerHTML = `
+        <div class="stat-card income">
+          <div class="label">Total Outstanding Owed to Me</div>
+          <div class="value num">${fmt(owedToMeTotal)}</div>
+        </div>
+      `;
+    }
+    const oweWrap = document.getElementById('iOweSummaryRow');
+    if(oweWrap){
+      oweWrap.innerHTML = `
+        <div class="stat-card expense">
+          <div class="label">Total Outstanding I Owe</div>
+          <div class="value num">${fmt(iOweTotal)}</div>
+        </div>
+      `;
+    }
+  }
+
 
   function drawDonut(slices, centerLabel, centerSub){
     const total = slices.reduce((s,x)=>s+x.value, 0);
@@ -1749,7 +1936,16 @@
     });
   });
 
-  function wireInlineAddForm({ toggleBtnId, formId, cancelBtnId, onSubmit }){
+  function smartDefaultDate(){
+    // If we're viewing the real current month, default to today.
+    // Otherwise default to the 1st of whichever month/year is currently selected.
+    if(state.currentMonth === thisMonthKey()){
+      return todayISO();
+    }
+    return state.currentMonth + '-01';
+  }
+
+  function wireInlineAddForm({ toggleBtnId, formId, cancelBtnId, onSubmit, dateFieldId }){
     const toggleBtn = document.getElementById(toggleBtnId);
     const form = document.getElementById(formId);
     const cancelBtn = document.getElementById(cancelBtnId);
@@ -1757,6 +1953,10 @@
     toggleBtn.addEventListener('click', () => {
       form.hidden = !form.hidden;
       if(!form.hidden){
+        if(dateFieldId){
+          const dateField = document.getElementById(dateFieldId);
+          if(dateField && !dateField.value){ dateField.value = smartDefaultDate(); }
+        }
         const firstInput = form.querySelector('input');
         if(firstInput) firstInput.focus();
       }
@@ -1795,15 +1995,17 @@
     toggleBtnId: 'addLentBtn',
     formId: 'lentForm',
     cancelBtnId: 'lentFormCancel',
+    dateFieldId: 'lentDateInput',
     onSubmit: (form) => {
       const person = document.getElementById('lentPersonInput').value.trim();
       const amount = Number(document.getElementById('lentAmountInput').value);
+      const date = document.getElementById('lentDateInput').value || todayISO();
       if(!person || !amount || amount <= 0){
         showToast('Enter a name and an amount above zero.');
         return false;
       }
-      state.lent.push({ id: uid(), person, amount, returned: 0, date: todayISO() });
-      logLoanEntry('expense', `Lent to ${person}`, amount);
+      state.lent.push({ id: uid(), person, amount, returned: 0, date });
+      logLoanEntry('expense', `Lent to ${person}`, amount, date);
       renderAll();
       showToast(`Logged ₹${amount} lent to ${person} as an expense ✓`);
     }
@@ -1813,15 +2015,17 @@
     toggleBtnId: 'addBorrowedBtn',
     formId: 'borrowedForm',
     cancelBtnId: 'borrowedFormCancel',
+    dateFieldId: 'borrowedDateInput',
     onSubmit: (form) => {
       const person = document.getElementById('borrowedPersonInput').value.trim();
       const amount = Number(document.getElementById('borrowedAmountInput').value);
+      const date = document.getElementById('borrowedDateInput').value || todayISO();
       if(!person || !amount || amount <= 0){
         showToast('Enter a name and an amount above zero.');
         return false;
       }
-      state.borrowed.push({ id: uid(), person, amount, repaid: 0, date: todayISO() });
-      logLoanEntry('income', `Borrowed from ${person}`, amount);
+      state.borrowed.push({ id: uid(), person, amount, repaid: 0, date });
+      logLoanEntry('income', `Borrowed from ${person}`, amount, date);
       renderAll();
       showToast(`Logged ₹${amount} borrowed from ${person} as income ✓`);
     }
@@ -1854,7 +2058,42 @@
   }
   updateSaveLoadUI();
 
+  /* ---------------- Module navigation ---------------- */
+  let currentModule = 'dashboard';
+  const MODULE_IDS = ['dashboard','transactions','jars','goals','owedtome','iowe'];
+
+  function switchModule(mod){
+    if(!MODULE_IDS.includes(mod)) return;
+    currentModule = mod;
+    MODULE_IDS.forEach(id => {
+      const el = document.getElementById('module-' + id);
+      if(el) el.hidden = (id !== mod);
+    });
+    document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-module') === mod);
+    });
+    // close mobile sidebar drawer if open
+    document.getElementById('sidebar').classList.remove('open');
+    window.scrollTo({top: 0, behavior: 'instant'});
+  }
+
+  document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => switchModule(btn.getAttribute('data-module')));
+  });
+
+  document.getElementById('yearViewToggleBtn').addEventListener('click', () => {
+    currentView = currentView === 'year' ? 'month' : 'year';
+    renderAll();
+  });
+
+  /* ---------------- iOS / unsupported-browser auto-save banner ---------------- */
+  if(!FS_ACCESS_SUPPORTED){
+    const banner = document.getElementById('iosAutosaveBanner');
+    if(banner) banner.hidden = false;
+  }
+
   /* ---------------- Init ---------------- */
+  switchModule('dashboard');
   renderAll();
 
 })();
