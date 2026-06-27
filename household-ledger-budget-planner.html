@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Household Ledger — Budget Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F7F3EC;
+    --paper-stripe: #EFE9DA;
+    --ink: #1B1F2A;
+    --ink-soft: #5A5A52;
+    --green: #2D6A4F;
+    --green-soft: #DCE8E0;
+    --rust: #B5481F;
+    --rust-soft: #F1DDD2;
+    --brass: #C99A3E;
+    --brass-soft: #F3E6C8;
+    --line: #D8D0BC;
+    --card: #FFFEFB;
+    --shadow: 0 1px 0 rgba(27,31,42,0.04), 0 8px 20px -10px rgba(27,31,42,0.12);
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+
+  body{
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--paper-stripe) 1px, transparent 1px);
+    background-size: 100% 38px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .num{ font-family:'JetBrains Mono', monospace; font-weight:600; letter-spacing:-0.01em; }
+
+  /* ---------- Header / Ledger tab strip ---------- */
+  .app{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  .masthead{
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 14px;
+  }
+  .masthead h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 30px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .masthead .sub{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .masthead-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1.5px solid var(--ink);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn:active{ transform: translateY(0); }
+  .btn.primary{ background: var(--ink); color: var(--paper); }
+  .btn.ghost{ border-color: var(--line); color: var(--ink-soft); }
+  .btn.small{ padding: 6px 10px; font-size: 12px; border-radius:5px; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, .jar:focus-visible{
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+
+  /* Month tabs styled like ledger book tabs */
+  .month-strip{
+    display:flex;
+    gap: 6px;
+    margin-bottom: 26px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .month-tab{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 14px 8px;
+    background: var(--paper-stripe);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    top: 1px;
+  }
+  .month-tab.active{
+    background: var(--card);
+    color: var(--ink);
+    border-color: var(--ink);
+    box-shadow: 0 -2px 0 var(--brass) inset;
+  }
+  .month-tab-add{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 7px 12px 8px;
+    background: transparent;
+    border: 1px dashed var(--line);
+    border-radius: 6px 6px 0 0;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  /* ---------- Summary row ---------- */
+  .summary-row{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 800px){ .summary-row{ grid-template-columns: repeat(2,1fr); } }
+
+  .stat-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .stat-card .value{
+    font-size: 24px;
+    font-family:'JetBrains Mono', monospace;
+    font-weight: 700;
+  }
+  .stat-card.income .value{ color: var(--green); }
+  .stat-card.expense .value{ color: var(--rust); }
+  .stat-card .value.negative{ color: var(--rust); }
+  .stat-card .value.positive{ color: var(--green); }
+
+  /* ---------- Layout grid ---------- */
+  .grid{
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 920px){ .grid{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .panel-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2{
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .panel-body{ padding: 6px 0 16px; }
+  .panel-body.pad{ padding: 16px 18px; }
+
+  /* ---------- Entry form ---------- */
+  .entry-form{
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr auto;
+    gap: 8px;
+    padding: 14px 18px;
+    border-bottom: 1px dashed var(--line);
+    background: var(--paper-stripe);
+  }
+  @media (max-width: 600px){ .entry-form{ grid-template-columns: 1fr 1fr; } }
+
+  .field label{
+    display:block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  input, select{
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--ink);
+  }
+  input[type="number"]{ font-family:'JetBrains Mono', monospace; }
+  input:focus, select:focus{ border-color: var(--ink); }
+  select:disabled{
+    background: var(--paper-stripe);
+    color: var(--ink-soft);
+    cursor: not-allowed;
+    border-style: dashed;
+  }
+
+  .type-toggle{
+    display:flex;
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    overflow:hidden;
+    height: 36px;
+    margin-top:auto;
+  }
+  .type-toggle button{
+    flex:1;
+    border:none;
+    background: var(--card);
+    font-size: 12px;
+    font-weight: 700;
+    cursor:pointer;
+    color: var(--ink-soft);
+  }
+  .type-toggle button.active[data-type="expense"]{ background: var(--rust); color: white; }
+  .type-toggle button.active[data-type="income"]{ background: var(--green); color: white; }
+
+  .add-row-btn{
+    align-self: end;
+    height: 36px;
+    background: var(--ink);
+    color: var(--paper);
+    border:none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor:pointer;
+    padding: 0 16px;
+  }
+  .add-row-btn:hover{ background: #000; }
+
+  /* ---------- Register rows ---------- */
+  .register{ max-height: 480px; overflow-y: auto; }
+  .reg-row{
+    display:grid;
+    grid-template-columns: 84px 1fr 110px 120px 32px;
+    gap: 10px;
+    align-items:center;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--paper-stripe);
+    font-size: 13.5px;
+  }
+  .reg-row:nth-child(even){ background: var(--paper-stripe); }
+  .reg-row .date{ color: var(--ink-soft); font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .reg-row .cat-tag{
+    display:inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--brass-soft);
+    color: #7A5A1E;
+    margin-left: 6px;
+  }
+  .reg-row .amt{ text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; }
+  .reg-row .amt.income{ color: var(--green); }
+  .reg-row .amt.expense{ color: var(--rust); }
+  .reg-row .del{
+    background:none; border:none; cursor:pointer; color: var(--ink-soft);
+    font-size: 16px; line-height:1; padding: 4px;
+  }
+  .reg-row .del:hover{ color: var(--rust); }
+  .empty-state{
+    padding: 36px 18px;
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+  .empty-state .big{ font-size: 28px; display:block; margin-bottom: 8px; }
+
+  /* ---------- Jars (signature element) ---------- */
+  .jars-wrap{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    padding: 18px;
+  }
+  @media (max-width: 560px){ .jars-wrap{ grid-template-columns: repeat(2,1fr); } }
+
+  .jar-unit{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 8px;
+  }
+  .jar{
+    width: 64px;
+    height: 84px;
+    cursor: default;
+  }
+  .jar-label{
+    font-size: 11px;
+    font-weight: 700;
+    text-align:center;
+    line-height:1.25;
+  }
+  .jar-amounts{
+    font-size: 10.5px;
+    font-family:'JetBrains Mono',monospace;
+    color: var(--ink-soft);
+    text-align:center;
+  }
+  .jar-amounts .over{ color: var(--rust); font-weight:700; }
+
+  .no-jars{
+    padding: 30px 18px;
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .inline-add-form{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 18px;
+    background: var(--paper-stripe);
+    border-bottom: 1px dashed var(--line);
+    align-items: center;
+  }
+  .inline-add-form input{
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+  .inline-add-actions{
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .cat-manage{
+    padding: 12px 18px 18px;
+    border-top: 1px dashed var(--line);
+    display:flex;
+    gap: 8px;
+    flex-wrap:wrap;
+  }
+  .cat-chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background: var(--paper-stripe);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .cat-chip input[type="number"]{
+    width: 64px;
+    padding: 2px 6px;
+    font-size: 11.5px;
+    border-radius: 4px;
+  }
+  .cat-chip button{
+    background:none; border:none; cursor:pointer; color: var(--ink-soft); font-size:13px;
+  }
+  .add-cat-form{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .add-cat-form input{ width: 110px; padding: 6px 8px; font-size:12px; }
+
+  /* ---------- Goals ---------- */
+  .goal-card{
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--paper-stripe);
+  }
+  .goal-card:last-child{ border-bottom:none; }
+  .goal-top{
+    display:flex;
+    justify-content: space-between;
+    align-items:baseline;
+    margin-bottom: 8px;
+  }
+  .goal-top .name{ font-weight: 700; font-size: 14px; }
+  .goal-top .nums{ font-size: 12.5px; font-family:'JetBrains Mono',monospace; color: var(--ink-soft); }
+  .goal-bar-track{
+    height: 10px;
+    background: var(--paper-stripe);
+    border-radius: 5px;
+    overflow:hidden;
+    border: 1px solid var(--line);
+  }
+  .goal-bar-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--brass), #DDB868);
+    border-radius: 5px 0 0 5px;
+    transition: width .4s ease;
+  }
+  .goal-bar-fill.done{ background: linear-gradient(90deg, var(--green), #3F8A68); }
+  .goal-actions{
+    display:flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .goal-actions input{ width: 90px; padding:6px 8px; font-size:12px; }
+
+  /* ---------- Loan trackers (lend / borrow) ---------- */
+  .loan-card{
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--paper-stripe);
+  }
+  .loan-card:last-child{ border-bottom:none; }
+  .loan-top{
+    display:flex;
+    justify-content: space-between;
+    align-items:baseline;
+    margin-bottom: 4px;
+  }
+  .loan-top .person{ font-weight: 700; font-size: 14px; }
+  .loan-top .balance{ font-size: 14px; font-family:'JetBrains Mono',monospace; font-weight:700; }
+  .loan-top .balance.cleared{ color: var(--green); }
+  .loan-sub{
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .loan-bar-track{
+    height: 8px;
+    background: var(--paper-stripe);
+    border-radius: 4px;
+    overflow:hidden;
+    border: 1px solid var(--line);
+    margin-bottom: 8px;
+  }
+  .loan-bar-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--brass), #DDB868);
+    border-radius: 4px 0 0 4px;
+    transition: width .4s ease;
+  }
+  .loan-bar-fill.cleared{ background: linear-gradient(90deg, var(--green), #3F8A68); }
+  .loan-actions{
+    display:flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .loan-actions input{ width: 90px; padding:6px 8px; font-size:12px; }
+  .no-loans{
+    padding: 24px 18px;
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  /* ---------- Chart panel ---------- */
+  .chart-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 10px 16px;
+    padding: 0 18px 16px;
+    font-size: 12px;
+  }
+  .chart-tabs{
+    display:flex;
+    gap: 4px;
+    padding: 12px 18px 0;
+    flex-wrap: wrap;
+  }
+  .chart-tab{
+    font-family:'Inter',sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border: 1.5px solid var(--line);
+    background: var(--paper-stripe);
+    color: var(--ink-soft);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .chart-tab.active{
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .legend-item{ display:flex; align-items:center; gap:6px; color: var(--ink-soft); }
+  .legend-swatch{ width:10px; height:10px; border-radius:2px; display:inline-block; }
+  .legend-amt{ font-family:'JetBrains Mono',monospace; font-weight:700; color: var(--ink); margin-left: 2px; }
+
+  footer.app-footer{
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 11.5px;
+    margin-top: 50px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  /* file input hidden */
+  #fileInput{ display:none; }
+
+  .toast{
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 50;
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.4);
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="masthead">
+    <div>
+      <h1>The Household Ledger</h1>
+      <div class="sub">a budget kept by hand, run by code</div>
+    </div>
+    <div class="masthead-actions">
+      <button class="btn ghost" id="linkFileBtn">Auto-Save to a File…</button>
+      <button class="btn ghost" id="loadBtn">Open File</button>
+      <button class="btn primary" id="saveBtn">Save Ledger</button>
+      <input type="file" id="fileInput" accept=".json">
+    </div>
+  </div>
+
+  <div class="month-strip" id="monthStrip"></div>
+
+  <div class="summary-row" id="summaryRow"></div>
+
+  <div class="grid">
+    <!-- LEFT: register -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Entries</h2>
+        <span class="sub" style="font-size:11px;color:var(--ink-soft);font-weight:600;" id="entryCount"></span>
+      </div>
+
+      <div class="entry-form">
+        <div class="field">
+          <label>Description</label>
+          <input type="text" id="descInput" placeholder="Grocery run, paycheck…">
+        </div>
+        <div class="field">
+          <label>Amount</label>
+          <input type="number" id="amtInput" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label id="catLabel">Category</label>
+          <select id="catInput"></select>
+        </div>
+        <div class="field" style="grid-column: 1 / -1; display:flex; gap:8px; align-items:end;">
+          <div class="type-toggle" id="typeToggle" style="flex:0 0 160px;">
+            <button class="active" data-type="expense">Spent</button>
+            <button data-type="income">Earned</button>
+          </div>
+          <input type="date" id="dateInput" style="flex:0 0 150px;">
+          <button class="add-row-btn" id="addEntryBtn" style="flex:1;">Add to ledger</button>
+        </div>
+      </div>
+
+      <div class="register" id="register"></div>
+    </div>
+
+    <!-- RIGHT: jars, goals, chart -->
+    <div style="display:flex; flex-direction:column; gap:22px;">
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Budget Jars</h2>
+          <span style="font-size:11px;color:var(--ink-soft);">this month</span>
+        </div>
+        <div id="jarsWrap"></div>
+        <div class="cat-manage" id="catManage"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Savings Goals</h2>
+          <button class="btn small ghost" id="addGoalBtn">+ New goal</button>
+        </div>
+        <form class="inline-add-form" id="goalForm" hidden>
+          <input type="text" id="goalNameInput" placeholder="Goal name (e.g. Trip to Goa)" required>
+          <input type="number" id="goalTargetInput" placeholder="Target amount" min="0.01" step="0.01" required>
+          <div class="inline-add-actions">
+            <button type="submit" class="btn small primary">Create goal</button>
+            <button type="button" class="btn small ghost" id="goalFormCancel">Cancel</button>
+          </div>
+        </form>
+        <div id="goalsWrap"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Money Owed to Me</h2>
+          <button class="btn small ghost" id="addLentBtn">+ Add</button>
+        </div>
+        <form class="inline-add-form" id="lentForm" hidden>
+          <input type="text" id="lentPersonInput" placeholder="Who owes you?" required>
+          <input type="number" id="lentAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
+          <div class="inline-add-actions">
+            <button type="submit" class="btn small primary">Add</button>
+            <button type="button" class="btn small ghost" id="lentFormCancel">Cancel</button>
+          </div>
+        </form>
+        <div id="lentWrap"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Money I Owe</h2>
+          <button class="btn small ghost" id="addBorrowedBtn">+ Add</button>
+        </div>
+        <form class="inline-add-form" id="borrowedForm" hidden>
+          <input type="text" id="borrowedPersonInput" placeholder="Who do you owe?" required>
+          <input type="number" id="borrowedAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
+          <div class="inline-add-actions">
+            <button type="submit" class="btn small primary">Add</button>
+            <button type="button" class="btn small ghost" id="borrowedFormCancel">Cancel</button>
+          </div>
+        </form>
+        <div id="borrowedWrap"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Charts</h2>
+        </div>
+        <div class="chart-tabs" id="chartTabs">
+          <button class="chart-tab active" data-chart="category">By Category</button>
+          <button class="chart-tab" data-chart="incomeexpense">Income vs Expense</button>
+          <button class="chart-tab" data-chart="budgetactual">Budget vs Actual</button>
+        </div>
+        <div id="chartWrap" style="padding: 10px 18px 0;"></div>
+        <div class="chart-legend" id="chartLegend"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    Your data lives only in this browser tab — nothing is sent anywhere. Use <strong>Save Ledger</strong> often to keep a backup file.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- State ---------------- */
+  const DEFAULT_CATEGORIES = [
+    { id: 'emis',     name: 'EMIs',              budget: 0,    color: '#B5481F' },
+    { id: 'cc',       name: 'Credit Card Bills', budget: 0,    color: '#A14F7C' },
+    { id: 'utilities',name: 'Utilities',         budget: 250,  color: '#3D7A9E' },
+    { id: 'transport',name: 'Transport (Fuel & Maintenance)', budget: 200, color: '#C99A3E' },
+    { id: 'fun',      name: 'Fun & Extras',      budget: 150,  color: '#6B5CA5' },
+    { id: 'food',     name: 'Outside Food',      budget: 300,  color: '#5E7C3A' },
+    { id: 'housing',  name: 'Housing',           budget: 1200, color: '#2D6A4F' },
+    { id: 'savings',  name: 'Savings',           budget: 0,    color: '#D4A24C' },
+  ];
+
+  function monthKey(d){ return d.slice(0,7); } // "2026-06"
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function thisMonthKey(){ return todayISO().slice(0,7); }
+
+  function defaultState(){
+    return {
+      version: 1,
+      categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
+      entries: [],     // {id, date, desc, amount, type:'income'|'expense', cat}
+      goals: [],       // {id, name, target, saved}
+      lent: [],        // {id, person, amount, returned, date}  -- money owed TO you
+      borrowed: [],    // {id, person, amount, repaid, date}    -- money you owe OTHERS
+      currentMonth: thisMonthKey(),
+    };
+  }
+
+  let state = defaultState();
+  let currentType = 'expense';
+
+  /* ---------------- Persistence (file based, no localStorage) ---------------- */
+  /* ---------------- File System Access (auto-save) where supported ---------------- */
+  const FS_ACCESS_SUPPORTED = !!window.showSaveFilePicker && !!window.showOpenFilePicker;
+  let linkedFileHandle = null;
+  let autosaveTimer = null;
+  let autosaveInFlight = false;
+
+  async function writeStateToHandle(handle){
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(state, null, 2));
+    await writable.close();
+  }
+
+  function scheduleAutosave(){
+    if(!linkedFileHandle) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(async () => {
+      if(autosaveInFlight) return;
+      autosaveInFlight = true;
+      try{
+        await writeStateToHandle(linkedFileHandle);
+        showToast('Auto-saved ✓');
+      }catch(err){
+        showToast('Auto-save failed — use Save Ledger to retry.');
+      }finally{
+        autosaveInFlight = false;
+      }
+    }, 600);
+  }
+
+  async function linkSaveFile(){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: `household-ledger-${todayISO()}.json`,
+        types: [{ description: 'Ledger JSON', accept: {'application/json': ['.json']} }]
+      });
+      linkedFileHandle = handle;
+      await writeStateToHandle(handle);
+      updateSaveLoadUI();
+      showToast('Linked! This file will auto-save from now on ✓');
+    }catch(err){
+      if(err && err.name !== 'AbortError'){
+        showToast('Could not link a file in this browser.');
+      }
+    }
+  }
+
+  async function openLinkedFile(){
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: 'Ledger JSON', accept: {'application/json': ['.json']} }]
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
+        throw new Error('bad shape');
+      }
+      state = parsed;
+      if(!state.currentMonth) state.currentMonth = thisMonthKey();
+      if(!Array.isArray(state.lent)) state.lent = [];
+      if(!Array.isArray(state.borrowed)) state.borrowed = [];
+      linkedFileHandle = handle;
+      renderAll();
+      updateSaveLoadUI();
+      showToast('Ledger loaded and linked for auto-save ✓');
+    }catch(err){
+      if(err && err.name !== 'AbortError'){
+        showToast('Could not read that file — is it a saved ledger?');
+      }
+    }
+  }
+
+  function updateSaveLoadUI(){
+    const saveBtn = document.getElementById('saveBtn');
+    const linkBtn = document.getElementById('linkFileBtn');
+    if(!FS_ACCESS_SUPPORTED){
+      if(linkBtn) linkBtn.style.display = 'none';
+      return;
+    }
+    if(linkedFileHandle){
+      saveBtn.textContent = 'Save Now';
+      linkBtn.textContent = 'Switch File';
+    }else{
+      saveBtn.textContent = 'Save Ledger';
+      linkBtn.textContent = 'Auto-Save to a File…';
+    }
+  }
+
+  /* ---------------- Fallback: manual download / upload (works everywhere, incl. iPhone) ---------------- */
+  function downloadJSON(){
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = todayISO();
+    a.href = url;
+    a.download = `household-ledger-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Ledger saved to a file ✓');
+  }
+
+  async function handleSaveClick(){
+    if(linkedFileHandle){
+      try{
+        await writeStateToHandle(linkedFileHandle);
+        showToast('Saved ✓');
+      }catch(err){
+        showToast('Could not save — try Switch File or download instead.');
+      }
+    }else{
+      downloadJSON();
+    }
+  }
+
+  function loadFromFile(file){
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const parsed = JSON.parse(e.target.result);
+        if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
+          throw new Error('bad shape');
+        }
+        state = parsed;
+        if(!state.currentMonth) state.currentMonth = thisMonthKey();
+        if(!Array.isArray(state.lent)) state.lent = [];
+        if(!Array.isArray(state.borrowed)) state.borrowed = [];
+        renderAll();
+        showToast('Ledger loaded ✓');
+      }catch(err){
+        showToast('Could not read that file — is it a saved ledger?');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  let toastTimer = null;
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+  }
+
+  /* ---------------- Helpers ---------------- */
+  function fmt(n){
+    const neg = n < 0;
+    const v = Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return (neg ? '-₹' : '₹') + v;
+  }
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+
+  function entriesForMonth(mKey){
+    return state.entries.filter(e => monthKey(e.date) === mKey);
+  }
+
+  function allMonthKeys(){
+    const set = new Set(state.entries.map(e => monthKey(e.date)));
+    set.add(state.currentMonth);
+    set.add(thisMonthKey());
+    return Array.from(set).sort();
+  }
+
+  function catName(id){
+    const c = state.categories.find(c=>c.id===id);
+    return c ? c.name : id;
+  }
+  function catColor(id){
+    const c = state.categories.find(c=>c.id===id);
+    return c ? c.color : '#999';
+  }
+
+  /* ---------------- Rendering ---------------- */
+  function renderAll(){
+    renderMonthStrip();
+    renderSummary();
+    renderCategorySelect();
+    renderRegister();
+    renderJars();
+    renderCatManage();
+    renderGoals();
+    renderLent();
+    renderBorrowed();
+    renderChart();
+    scheduleAutosave();
+  }
+
+  function renderMonthStrip(){
+    const wrap = document.getElementById('monthStrip');
+    wrap.innerHTML = '';
+    const keys = allMonthKeys();
+    keys.forEach(k => {
+      const btn = document.createElement('button');
+      btn.className = 'month-tab' + (k === state.currentMonth ? ' active' : '');
+      const d = new Date(k + '-01T00:00:00');
+      btn.textContent = d.toLocaleDateString(undefined, {month:'short', year:'numeric'});
+      btn.addEventListener('click', () => { state.currentMonth = k; renderAll(); });
+      wrap.appendChild(btn);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'month-tab-add';
+    addBtn.textContent = '+';
+    addBtn.title = 'Add next month';
+    addBtn.addEventListener('click', () => {
+      const last = keys[keys.length-1];
+      const d = new Date(last + '-01T00:00:00');
+      d.setMonth(d.getMonth()+1);
+      state.currentMonth = d.toISOString().slice(0,7);
+      renderAll();
+    });
+    wrap.appendChild(addBtn);
+  }
+
+  function renderSummary(){
+    const entries = entriesForMonth(state.currentMonth);
+    const income = entries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+    const expense = entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+    const net = income - expense;
+    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0);
+
+    const wrap = document.getElementById('summaryRow');
+    wrap.innerHTML = `
+      <div class="stat-card income">
+        <div class="label">Income</div>
+        <div class="value num">${fmt(income)}</div>
+      </div>
+      <div class="stat-card expense">
+        <div class="label">Spent</div>
+        <div class="value num">${fmt(expense)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Net</div>
+        <div class="value num ${net>=0?'positive':'negative'}">${fmt(net)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Budgeted / mo</div>
+        <div class="value num">${fmt(totalBudget)}</div>
+      </div>
+    `;
+  }
+
+  function renderCategorySelect(){
+    const sel = document.getElementById('catInput');
+    sel.innerHTML = state.categories.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+    updateCatInputState();
+  }
+
+  function escapeHTML(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function renderRegister(){
+    const wrap = document.getElementById('register');
+    const entries = entriesForMonth(state.currentMonth).slice().sort((a,b)=> b.date.localeCompare(a.date));
+    document.getElementById('entryCount').textContent = entries.length ? `${entries.length} entr${entries.length===1?'y':'ies'}` : '';
+
+    if(entries.length === 0){
+      wrap.innerHTML = `<div class="empty-state"><span class="big">📒</span>Nothing logged yet this month.<br>Add your first entry above.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = entries.map(e => {
+      const d = new Date(e.date + 'T00:00:00');
+      const dStr = d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+      const sign = e.type === 'income' ? '+' : '−';
+      return `
+        <div class="reg-row" data-id="${e.id}">
+          <span class="date">${dStr}</span>
+          <span>${escapeHTML(e.desc || '(no description)')}<span class="cat-tag" style="background:${catColor(e.cat)}22;color:${catColor(e.cat)};">${escapeHTML(catName(e.cat))}</span></span>
+          <span class="amt ${e.type}">${sign}${fmt(e.amount)}</span>
+          <span></span>
+          <button class="del" title="Delete entry" aria-label="Delete entry">✕</button>
+        </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('.del').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        const row = ev.target.closest('.reg-row');
+        const id = row.getAttribute('data-id');
+        state.entries = state.entries.filter(e => e.id !== id);
+        renderAll();
+      });
+    });
+  }
+
+  function renderJars(){
+    const wrap = document.getElementById('jarsWrap');
+    if(state.categories.length === 0){
+      wrap.innerHTML = `<div class="no-jars">No categories yet. Add one below to start a jar.</div>`;
+      scheduleAutosave();
+      return;
+    }
+    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
+    const spentByCat = {};
+    entries.forEach(e => { spentByCat[e.cat] = (spentByCat[e.cat]||0) + e.amount; });
+
+    wrap.innerHTML = `<div class="jars-wrap">${state.categories.map(c => {
+      const spent = spentByCat[c.id] || 0;
+      const budget = Number(c.budget) || 0;
+      const pct = budget > 0 ? Math.min(spent / budget, 1) : (spent > 0 ? 1 : 0);
+      const over = budget > 0 && spent > budget;
+      const fillColor = over ? '#B5481F' : c.color;
+      const fillHeight = 70 * pct; // jar interior height ~70
+      const fillY = 78 - fillHeight; // bottom anchored, jar interior starts y=8 ends y=78
+      return `
+        <div class="jar-unit">
+          <svg class="jar" viewBox="0 0 64 84" aria-label="${escapeHTML(c.name)} jar, ${Math.round(pct*100)} percent full">
+            <defs>
+              <clipPath id="clip-${c.id}">
+                <path d="M10,10 L54,10 L52,80 Q52,82 50,82 L14,82 Q12,82 12,80 Z" />
+              </clipPath>
+            </defs>
+            <!-- jar outline -->
+            <path d="M10,10 L54,10 L52,80 Q52,82 50,82 L14,82 Q12,82 12,80 Z"
+                  fill="#FFFEFB" stroke="#1B1F2A" stroke-width="2"/>
+            <!-- lid -->
+            <rect x="14" y="4" width="36" height="8" rx="2" fill="#1B1F2A"/>
+            <!-- fill -->
+            <rect x="10" y="${fillY.toFixed(1)}" width="44" height="${(82-fillY).toFixed(1)}"
+                  fill="${fillColor}" opacity="0.85" clip-path="url(#clip-${c.id})"
+                  style="transition: y .5s ease, height .5s ease;"/>
+            <!-- shine -->
+            <rect x="15" y="14" width="4" height="60" fill="white" opacity="0.25" clip-path="url(#clip-${c.id})"/>
+          </svg>
+          <div class="jar-label">${escapeHTML(c.name)}</div>
+          <div class="jar-amounts">${fmt(spent)} / ${fmt(budget)}${over ? `<div class="over">over by ${fmt(spent-budget)}</div>` : ''}</div>
+        </div>
+      `;
+    }).join('')}</div>`;
+    scheduleAutosave();
+  }
+
+  function renderCatManage(){
+    const wrap = document.getElementById('catManage');
+    wrap.innerHTML = state.categories.map(c => `
+      <div class="cat-chip" data-id="${c.id}">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+        ${escapeHTML(c.name)}
+        <input type="number" min="0" step="1" value="${c.budget}" title="Monthly budget" class="budget-edit">
+        <button class="remove-cat" title="Remove category" aria-label="Remove category">✕</button>
+      </div>
+    `).join('') + `
+      <form class="add-cat-form" id="addCatForm">
+        <input type="text" id="newCatName" placeholder="New category…" required>
+        <input type="number" id="newCatBudget" placeholder="Budget" min="0" step="1" style="width:80px;" required>
+        <button type="submit" class="btn small">Add</button>
+      </form>
+    `;
+
+    wrap.querySelectorAll('.budget-edit').forEach(inp => {
+      inp.addEventListener('change', (ev) => {
+        const id = ev.target.closest('.cat-chip').getAttribute('data-id');
+        const cat = state.categories.find(c=>c.id===id);
+        cat.budget = Number(ev.target.value) || 0;
+        renderJars();
+        renderSummary();
+      });
+    });
+    wrap.querySelectorAll('.remove-cat').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        const chip = ev.target.closest('.cat-chip');
+        const id = chip.getAttribute('data-id');
+        const inUse = state.entries.some(e=>e.cat===id);
+
+        if(inUse && btn.getAttribute('data-confirm') !== 'true'){
+          btn.setAttribute('data-confirm', 'true');
+          btn.textContent = '✓ Sure?';
+          showToast('Entries use this category — click again to remove anyway.');
+          setTimeout(() => {
+            if(btn.isConnected){
+              btn.setAttribute('data-confirm', 'false');
+              btn.textContent = '✕';
+            }
+          }, 4000);
+          return;
+        }
+
+        state.categories = state.categories.filter(c=>c.id!==id);
+        renderAll();
+      });
+    });
+
+    const COLORS = ['#2D6A4F','#B5481F','#C99A3E','#6B5CA5','#3D7A9E','#A14F7C','#5E7C3A'];
+    document.getElementById('addCatForm').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const name = document.getElementById('newCatName').value.trim();
+      const budget = Number(document.getElementById('newCatBudget').value) || 0;
+      if(!name) return;
+      state.categories.push({
+        id: uid(),
+        name,
+        budget,
+        color: COLORS[state.categories.length % COLORS.length]
+      });
+      renderAll();
+    });
+  }
+
+  function renderGoals(){
+    const wrap = document.getElementById('goalsWrap');
+    if(state.goals.length === 0){
+      wrap.innerHTML = `<div class="no-jars">No savings goals yet. Click "New goal" to start one — a vacation, an emergency fund, anything.</div>`;
+      scheduleAutosave();
+      return;
+    }
+    wrap.innerHTML = state.goals.map(g => {
+      const pct = g.target > 0 ? Math.min(g.saved / g.target, 1) : 0;
+      const done = g.saved >= g.target && g.target > 0;
+      return `
+        <div class="goal-card" data-id="${g.id}">
+          <div class="goal-top">
+            <span class="name">${escapeHTML(g.name)} ${done ? '🎉' : ''}</span>
+            <span class="nums">${fmt(g.saved)} / ${fmt(g.target)}</span>
+          </div>
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill ${done?'done':''}" style="width:${(pct*100).toFixed(1)}%"></div>
+          </div>
+          <div class="goal-actions">
+            <input type="number" min="0" step="1" placeholder="Add amount" class="goal-add-input">
+            <button class="btn small goal-add-btn">Add to savings</button>
+            <button class="btn small ghost goal-del-btn" style="margin-left:auto;">Remove</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    wrap.querySelectorAll('.goal-card').forEach(card => {
+      const id = card.getAttribute('data-id');
+      card.querySelector('.goal-add-btn').addEventListener('click', () => {
+        const inp = card.querySelector('.goal-add-input');
+        const amt = Number(inp.value);
+        if(!amt) return;
+        const g = state.goals.find(g=>g.id===id);
+        g.saved += amt;
+        renderGoals();
+      });
+      card.querySelector('.goal-del-btn').addEventListener('click', () => {
+        state.goals = state.goals.filter(g=>g.id!==id);
+        renderGoals();
+      });
+    });
+    scheduleAutosave();
+  }
+
+  // ---- Loan trackers: "lent" = money owed TO you, "borrowed" = money YOU owe ----
+
+  function renderLoanList(containerId, list, kind){
+    // kind: 'lent' (paidField='returned', verb='Log repayment received')
+    //       'borrowed' (paidField='repaid', verb='Log repayment made')
+    const wrap = document.getElementById(containerId);
+    const paidField = kind === 'lent' ? 'returned' : 'repaid';
+    const emptyMsg = kind === 'lent'
+      ? 'Nobody owes you anything right now. Click "+ Add" when you lend money to someone.'
+      : 'You don\'t owe anyone right now. Click "+ Add" when you borrow money from someone.';
+
+    if(list.length === 0){
+      wrap.innerHTML = `<div class="no-loans">${emptyMsg}</div>`;
+      scheduleAutosave();
+      return;
+    }
+
+    wrap.innerHTML = list.map(item => {
+      const paid = item[paidField] || 0;
+      const outstanding = Math.max(item.amount - paid, 0);
+      const pct = item.amount > 0 ? Math.min(paid / item.amount, 1) : 0;
+      const cleared = outstanding <= 0;
+      const subLabel = kind === 'lent' ? 'they\'ve paid back' : 'you\'ve paid back';
+      return `
+        <div class="loan-card" data-id="${item.id}">
+          <div class="loan-top">
+            <span class="person">${escapeHTML(item.person)} ${cleared ? '✅' : ''}</span>
+            <span class="balance ${cleared?'cleared':''}">${cleared ? 'Cleared' : fmt(outstanding) + ' left'}</span>
+          </div>
+          <div class="loan-sub">${fmt(paid)} of ${fmt(item.amount)} ${subLabel}</div>
+          <div class="loan-bar-track">
+            <div class="loan-bar-fill ${cleared?'cleared':''}" style="width:${(pct*100).toFixed(1)}%"></div>
+          </div>
+          <div class="loan-actions">
+            <input type="number" min="0" step="1" placeholder="Amount" class="loan-pay-input" ${cleared?'disabled':''}>
+            <button class="btn small loan-pay-btn" ${cleared?'disabled':''}>${kind==='lent' ? 'Log payment received' : 'Log payment made'}</button>
+            <button class="btn small ghost loan-del-btn" style="margin-left:auto;">Remove</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    wrap.querySelectorAll('.loan-card').forEach(card => {
+      const id = card.getAttribute('data-id');
+      const payBtn = card.querySelector('.loan-pay-btn');
+      if(payBtn){
+        payBtn.addEventListener('click', () => {
+          const inp = card.querySelector('.loan-pay-input');
+          const amt = Number(inp.value);
+          if(!amt || amt <= 0) return;
+          const item = list.find(x=>x.id===id);
+          item[paidField] = Math.min((item[paidField]||0) + amt, item.amount);
+          if(kind==='lent') renderLent(); else renderBorrowed();
+        });
+      }
+      card.querySelector('.loan-del-btn').addEventListener('click', () => {
+        if(kind === 'lent'){
+          state.lent = state.lent.filter(x=>x.id!==id);
+          renderLent();
+        }else{
+          state.borrowed = state.borrowed.filter(x=>x.id!==id);
+          renderBorrowed();
+        }
+      });
+    });
+    scheduleAutosave();
+  }
+
+  function renderLent(){ renderLoanList('lentWrap', state.lent, 'lent'); }
+  function renderBorrowed(){ renderLoanList('borrowedWrap', state.borrowed, 'borrowed'); }
+
+
+  function drawDonut(slices, centerLabel, centerSub){
+    const total = slices.reduce((s,x)=>s+x.value, 0);
+    const chartWrap = document.getElementById('chartWrap');
+    const legend = document.getElementById('chartLegend');
+
+    if(total <= 0){
+      chartWrap.innerHTML = `<div class="no-jars" style="padding:24px 0;">Nothing to chart yet this month.</div>`;
+      legend.innerHTML = '';
+      return;
+    }
+
+    const usable = slices.filter(s => s.value > 0).sort((a,b)=>b.value-a.value);
+    const cx = 90, cy = 90, r = 70;
+    let angle = -90;
+    const arcs = usable.map(s => {
+      const frac = s.value / total;
+      const startAngle = angle;
+      const endAngle = angle + frac*360;
+      angle = endAngle;
+      const large = (endAngle-startAngle) > 180 ? 1 : 0;
+      const toRad = a => (a * Math.PI/180);
+      const x1 = cx + r*Math.cos(toRad(startAngle));
+      const y1 = cy + r*Math.sin(toRad(startAngle));
+      const x2 = cx + r*Math.cos(toRad(endAngle));
+      const y2 = cy + r*Math.sin(toRad(endAngle));
+      if(frac >= 0.999){
+        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${s.color}" />`;
+      }
+      return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${s.color}" stroke="#FFFEFB" stroke-width="1.5"/>`;
+    }).join('');
+
+    chartWrap.innerHTML = `
+      <svg viewBox="0 0 180 180" style="width:180px; height:180px; display:block; margin: 0 auto 8px;">
+        ${arcs}
+        <circle cx="${cx}" cy="${cy}" r="38" fill="#FFFEFB" />
+        <text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12.5" font-weight="700" fill="#1B1F2A">${centerLabel}</text>
+        <text x="${cx}" y="${cy+12}" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#5A5A52" letter-spacing="0.05em">${centerSub}</text>
+      </svg>
+    `;
+
+    legend.innerHTML = usable.map(s => `
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:${s.color};"></span>
+        ${escapeHTML(s.label)}
+        <span class="legend-amt">${fmt(s.value)}</span>
+      </span>
+    `).join('');
+  }
+
+  function renderChartByCategory(){
+    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
+    const byCat = {};
+    entries.forEach(e => { byCat[e.cat] = (byCat[e.cat]||0) + e.amount; });
+    const total = Object.values(byCat).reduce((a,b)=>a+b,0);
+    const slices = Object.keys(byCat).map(catId => ({
+      label: catName(catId), value: byCat[catId], color: catColor(catId)
+    }));
+    drawDonut(slices, fmt(total).replace('.00',''), 'SPENT');
+  }
+
+  function renderChartIncomeExpense(){
+    const entries = entriesForMonth(state.currentMonth);
+    const income = entries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+    const expense = entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+    const slices = [
+      { label: 'Income', value: income, color: '#2D6A4F' },
+      { label: 'Expense', value: expense, color: '#B5481F' },
+    ];
+    const net = income - expense;
+    drawDonut(slices, fmt(net).replace('.00',''), 'NET');
+  }
+
+  function renderChartBudgetActual(){
+    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
+    const spent = entries.reduce((s,e)=>s+e.amount,0);
+    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0);
+    const remaining = Math.max(totalBudget - spent, 0);
+    const overspend = Math.max(spent - totalBudget, 0);
+    const slices = [
+      { label: 'Spent (within budget)', value: Math.min(spent, totalBudget), color: '#C99A3E' },
+      { label: 'Remaining budget', value: remaining, color: '#DCE8E0' },
+    ];
+    if(overspend > 0){
+      slices.push({ label: 'Over budget', value: overspend, color: '#B5481F' });
+    }
+    const pct = totalBudget > 0 ? Math.round((spent/totalBudget)*100) : 0;
+    drawDonut(slices, pct + '%', 'OF BUDGET');
+  }
+
+  let currentChart = 'category';
+  function renderChart(){
+    if(currentChart === 'category') renderChartByCategory();
+    else if(currentChart === 'incomeexpense') renderChartIncomeExpense();
+    else if(currentChart === 'budgetactual') renderChartBudgetActual();
+  }
+
+  /* ---------------- Event wiring ---------------- */
+  function updateCatInputState(){
+    const catSelect = document.getElementById('catInput');
+    const label = document.getElementById('catLabel');
+    if(currentType === 'income'){
+      catSelect.disabled = true;
+      catSelect.value = '';
+      if(label) label.textContent = 'Category (not needed for income)';
+    }else{
+      catSelect.disabled = false;
+      if(!catSelect.value && catSelect.options.length){
+        catSelect.selectedIndex = 0;
+      }
+      if(label) label.textContent = 'Category';
+    }
+  }
+
+  document.getElementById('typeToggle').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button');
+    if(!btn) return;
+    currentType = btn.getAttribute('data-type');
+    document.querySelectorAll('#typeToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateCatInputState();
+  });
+
+  document.getElementById('dateInput').value = todayISO();
+  updateCatInputState();
+
+  document.getElementById('addEntryBtn').addEventListener('click', () => {
+    const desc = document.getElementById('descInput').value.trim();
+    const amount = Number(document.getElementById('amtInput').value);
+    const cat = document.getElementById('catInput').value;
+    const date = document.getElementById('dateInput').value || todayISO();
+
+    if(!amount || amount <= 0){
+      showToast('Enter an amount greater than zero.');
+      return;
+    }
+    if(currentType === 'expense' && !cat){
+      showToast('Pick a category for this expense.');
+      return;
+    }
+
+    state.entries.push({
+      id: uid(),
+      date,
+      desc,
+      amount,
+      type: currentType,
+      cat: currentType === 'expense' ? cat : 'income'
+    });
+
+    // jump to that entry's month if different
+    state.currentMonth = monthKey(date);
+
+    document.getElementById('descInput').value = '';
+    document.getElementById('amtInput').value = '';
+    document.getElementById('descInput').focus();
+
+    renderAll();
+  });
+
+  // allow Enter key in description/amount to submit
+  ['descInput','amtInput'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addEntryBtn').click(); }
+    });
+  });
+
+  function wireInlineAddForm({ toggleBtnId, formId, cancelBtnId, onSubmit }){
+    const toggleBtn = document.getElementById(toggleBtnId);
+    const form = document.getElementById(formId);
+    const cancelBtn = document.getElementById(cancelBtnId);
+
+    toggleBtn.addEventListener('click', () => {
+      form.hidden = !form.hidden;
+      if(!form.hidden){
+        const firstInput = form.querySelector('input');
+        if(firstInput) firstInput.focus();
+      }
+    });
+    cancelBtn.addEventListener('click', () => {
+      form.reset();
+      form.hidden = true;
+    });
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const ok = onSubmit(form);
+      if(ok !== false){
+        form.reset();
+        form.hidden = true;
+      }
+    });
+  }
+
+  wireInlineAddForm({
+    toggleBtnId: 'addGoalBtn',
+    formId: 'goalForm',
+    cancelBtnId: 'goalFormCancel',
+    onSubmit: (form) => {
+      const name = document.getElementById('goalNameInput').value.trim();
+      const target = Number(document.getElementById('goalTargetInput').value);
+      if(!name || !target || target <= 0){
+        showToast('Enter a goal name and a target amount above zero.');
+        return false;
+      }
+      state.goals.push({ id: uid(), name, target, saved: 0 });
+      renderGoals();
+    }
+  });
+
+  wireInlineAddForm({
+    toggleBtnId: 'addLentBtn',
+    formId: 'lentForm',
+    cancelBtnId: 'lentFormCancel',
+    onSubmit: (form) => {
+      const person = document.getElementById('lentPersonInput').value.trim();
+      const amount = Number(document.getElementById('lentAmountInput').value);
+      if(!person || !amount || amount <= 0){
+        showToast('Enter a name and an amount above zero.');
+        return false;
+      }
+      state.lent.push({ id: uid(), person, amount, returned: 0, date: todayISO() });
+      renderLent();
+    }
+  });
+
+  wireInlineAddForm({
+    toggleBtnId: 'addBorrowedBtn',
+    formId: 'borrowedForm',
+    cancelBtnId: 'borrowedFormCancel',
+    onSubmit: (form) => {
+      const person = document.getElementById('borrowedPersonInput').value.trim();
+      const amount = Number(document.getElementById('borrowedAmountInput').value);
+      if(!person || !amount || amount <= 0){
+        showToast('Enter a name and an amount above zero.');
+        return false;
+      }
+      state.borrowed.push({ id: uid(), person, amount, repaid: 0, date: todayISO() });
+      renderBorrowed();
+    }
+  });
+
+  document.getElementById('chartTabs').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.chart-tab');
+    if(!btn) return;
+    currentChart = btn.getAttribute('data-chart');
+    document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderChart();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', handleSaveClick);
+  document.getElementById('loadBtn').addEventListener('click', () => {
+    if(FS_ACCESS_SUPPORTED){
+      openLinkedFile();
+    }else{
+      document.getElementById('fileInput').click();
+    }
+  });
+  document.getElementById('fileInput').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if(file) loadFromFile(file);
+    ev.target.value = '';
+  });
+  if(FS_ACCESS_SUPPORTED){
+    document.getElementById('linkFileBtn').addEventListener('click', linkSaveFile);
+  }
+  updateSaveLoadUI();
+
+  /* ---------------- Init ---------------- */
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
