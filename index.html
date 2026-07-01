@@ -1,2129 +1,982 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Household Ledger — Budget Planner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --paper: #F7F3EC;
-    --paper-stripe: #EFE9DA;
-    --ink: #1B1F2A;
-    --ink-soft: #5A5A52;
-    --green: #2D6A4F;
-    --green-soft: #DCE8E0;
-    --rust: #B5481F;
-    --rust-soft: #F1DDD2;
-    --brass: #C99A3E;
-    --brass-soft: #F3E6C8;
-    --line: #D8D0BC;
-    --card: #FFFEFB;
-    --shadow: 0 1px 0 rgba(27,31,42,0.04), 0 8px 20px -10px rgba(27,31,42,0.12);
-  }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Xylo DG Studio builds digital products, IT solutions, automation systems, AI tools, and tech consultation for growing businesses.">
+  <title>Xylo DG Studio | Digital Products, IT Solutions & Innovation</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #030509;
+      --panel: #07101a;
+      --panel-2: #0b1320;
+      --text: #f5f8ff;
+      --muted: #9aa7b7;
+      --line: rgba(255, 255, 255, 0.12);
+      --blue: #169bff;
+      --cyan: #14d9ff;
+      --lime: #b8ff4f;
+      --pink: #ff4fb8;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.4);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-  *{ box-sizing: border-box; }
-  html, body{ margin:0; padding:0; }
+    * {
+      box-sizing: border-box;
+    }
 
-  body{
-    background: var(--paper);
-    background-image:
-      linear-gradient(var(--paper-stripe) 1px, transparent 1px);
-    background-size: 100% 38px;
-    color: var(--ink);
-    font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
+    html {
+      scroll-behavior: smooth;
+    }
 
-  .num{ font-family:'JetBrains Mono', monospace; font-weight:600; letter-spacing:-0.01em; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 12%, rgba(22, 155, 255, 0.18), transparent 26rem),
+        radial-gradient(circle at 86% 20%, rgba(184, 255, 79, 0.1), transparent 22rem),
+        linear-gradient(180deg, #020407 0%, #07101a 45%, #030509 100%);
+      color: var(--text);
+      min-width: 320px;
+    }
 
-  /* ---------- App shell: sidebar (desktop) + bottom nav (mobile) ---------- */
-  .app-shell{
-    display: flex;
-    min-height: 100vh;
-  }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
 
-  .sidebar{
-    width: 220px;
-    flex: 0 0 220px;
-    background: var(--card);
-    border-right: 1.5px solid var(--line);
-    display: flex;
-    flex-direction: column;
-    padding: 20px 14px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
-  .sidebar-brand{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    margin-bottom: 22px;
-    padding: 0 6px;
-  }
-  .brand-mark{ font-size: 26px; line-height:1; }
-  .brand-title{
-    font-family:'Fraunces',serif;
-    font-weight:700;
-    font-size: 15px;
-    line-height: 1.15;
-  }
-  .nav-item{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-family:'Inter',sans-serif;
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    cursor: pointer;
-    margin-bottom: 2px;
-  }
-  .nav-item:hover{ background: var(--paper-stripe); color: var(--ink); }
-  .nav-item.active{
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .nav-icon{ font-size: 17px; line-height:1; flex: 0 0 auto; }
-  .sidebar-footer{
-    margin-top: auto;
-    padding-top: 14px;
-    border-top: 1px dashed var(--line);
-  }
-  #fileInput{ display:none; }
-
-  .main-area{
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 24px 28px 90px;
-    max-width: 980px;
-  }
-
-  .module-screen{ animation: fadeIn .15s ease; }
-  @keyframes fadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
-
-  .dashboard-toprow{
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .dashboard-toprow .year-strip{ margin-bottom: 0; flex: 1 1 auto; }
-
-  /* Bottom nav: hidden on desktop, shown on mobile */
-  .bottom-nav{
-    display: none;
-  }
-
-  .save-bar{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1.5px solid var(--line);
-  }
-  .save-bar-title{
-    font-family: 'Fraunces', serif;
-    font-weight: 700;
-    font-size: 16px;
-    white-space: nowrap;
-  }
-  .save-bar-actions{
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  @media (max-width: 860px){
-    .save-bar-title{ display: none; }
-    .save-bar-actions{ width: 100%; }
-    .save-bar-actions .btn{ flex: 1 1 auto; }
-  }
-  @media (min-width: 861px){
-    .save-bar-title{ display: none; } /* sidebar brand already shows the title on desktop */
-  }
-
-  .ios-banner{
-    background: var(--brass-soft);
-    border: 1px solid var(--brass);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 12.5px;
-    color: #6B4F1E;
-    margin-bottom: 18px;
-    line-height: 1.5;
-  }
-
-  @media (max-width: 860px){
-    .sidebar{ display: none; }
-    .main-area{
-      padding: 16px 14px 84px;
+    img {
       max-width: 100%;
+      display: block;
     }
-    .bottom-nav{
+
+    .shell {
+      width: min(1160px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(3, 5, 9, 0.78);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      min-height: 76px;
       display: flex;
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--card);
-      border-top: 1.5px solid var(--line);
-      z-index: 40;
-      padding: 4px 2px;
-      padding-bottom: max(4px, env(safe-area-inset-bottom));
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
     }
-    .bottom-nav-item{
-      flex: 1 1 0;
-      display:flex;
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: max-content;
+    }
+
+    .brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      box-shadow: 0 0 22px rgba(22, 155, 255, 0.34);
+    }
+
+    .brand span {
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--text);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      background: var(--text);
+      color: #06101b;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      box-shadow: 0 16px 40px rgba(22, 155, 255, 0.22);
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--line);
+      box-shadow: none;
+    }
+
+    .button.accent {
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      color: #00111f;
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+    }
+
+    .hero {
+      position: relative;
+      min-height: calc(100vh - 76px);
+      display: grid;
+      align-items: center;
+      padding: 74px 0 48px;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(20, 217, 255, 0.55), transparent);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+      align-items: center;
+      gap: 52px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--cyan);
+      font-weight: 800;
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 36px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--lime), var(--cyan));
+    }
+
+    h1, h2, h3, p {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 6.8rem);
+      line-height: 0.92;
+      letter-spacing: 0;
+      margin-bottom: 24px;
+      max-width: 780px;
+    }
+
+    .hero-copy {
+      color: #c9d4e2;
+      font-size: clamp(1.04rem, 2vw, 1.25rem);
+      line-height: 1.7;
+      max-width: 690px;
+      margin-bottom: 30px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 34px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      max-width: 620px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: rgba(7, 16, 26, 0.74);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .brand-card {
+      position: relative;
+      border: 1px solid rgba(22, 155, 255, 0.35);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(4, 8, 14, 0.78);
+      box-shadow: var(--shadow), 0 0 70px rgba(22, 155, 255, 0.18);
+    }
+
+    .studio-panel {
+      min-height: 520px;
+      border-radius: 6px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        radial-gradient(circle at 50% 32%, rgba(20, 217, 255, 0.22), transparent 15rem),
+        linear-gradient(180deg, #07111d 0%, #03070d 100%);
+      background-size: 42px 42px, 42px 42px, auto, auto;
+      padding: 34px;
+      display: grid;
+      align-content: center;
+      gap: 26px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .studio-panel::before,
+    .studio-panel::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(20, 217, 255, 0.24);
+      border-radius: 50%;
+      inset: 74px;
+    }
+
+    .studio-panel::after {
+      inset: 118px;
+      border-color: rgba(184, 255, 79, 0.18);
+      transform: rotate(18deg);
+    }
+
+    .hero-mark {
+      position: relative;
+      z-index: 1;
+      width: min(72%, 300px);
+      aspect-ratio: 1;
+      margin: 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(2, 6, 12, 0.72);
+      border: 1px solid rgba(20, 217, 255, 0.38);
+      box-shadow: inset 0 0 44px rgba(22, 155, 255, 0.16), 0 0 70px rgba(22, 155, 255, 0.24);
+    }
+
+    .hero-mark img {
+      width: 64%;
+      border-radius: 18px;
+      box-shadow: 0 0 42px rgba(20, 217, 255, 0.28);
+    }
+
+    .signal-list {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .signal-list span {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(3, 7, 13, 0.72);
+      color: #dce8f7;
+      font-weight: 800;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .status-strip {
+      position: absolute;
+      left: 28px;
+      right: 28px;
+      bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      background: rgba(3, 5, 9, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+    }
+
+    .pulse {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 22px var(--lime);
+      flex: 0 0 auto;
+    }
+
+    .status-strip strong {
+      display: block;
+      font-size: 0.94rem;
+    }
+
+    .status-strip span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    section {
+      padding: 88px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 32px;
+      margin-bottom: 34px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1;
+      max-width: 650px;
+      margin-bottom: 0;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 420px;
+      margin-bottom: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .tile {
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(11, 19, 32, 0.92), rgba(7, 16, 26, 0.72));
+    }
+
+    .tile-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      color: var(--cyan);
+      border: 1px solid rgba(22, 155, 255, 0.36);
+      background: rgba(22, 155, 255, 0.08);
+      margin-bottom: 22px;
+    }
+
+    .tile h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .tile p {
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 0;
+    }
+
+    .products {
+      background:
+        linear-gradient(180deg, rgba(3, 5, 9, 0), rgba(20, 217, 255, 0.05)),
+        var(--bg);
+    }
+
+    .product-row {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .product-feature {
+      min-height: 420px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(184, 255, 79, 0.28);
+      padding: 30px;
+      background:
+        linear-gradient(135deg, rgba(184, 255, 79, 0.14), transparent 45%),
+        linear-gradient(180deg, #0b1320, #07101a);
+      display: flex;
       flex-direction: column;
-      align-items:center;
-      gap: 2px;
-      background: none;
-      border: none;
-      padding: 6px 2px;
-      font-family:'Inter',sans-serif;
-      color: var(--ink-soft);
+      justify-content: space-between;
+    }
+
+    .product-feature h3 {
+      font-size: clamp(1.7rem, 3vw, 2.7rem);
+      line-height: 1.05;
+      margin-bottom: 18px;
+    }
+
+    .product-feature p {
+      color: #c6d2df;
+      line-height: 1.7;
+      max-width: 440px;
+    }
+
+    .product-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .product {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      background: rgba(7, 16, 26, 0.72);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .product strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .product span {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .tag {
+      color: #00111f;
+      background: var(--lime);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      min-width: max-content;
+    }
+
+    .process {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .step {
+      background: #07101a;
+      padding: 26px;
+      min-height: 210px;
+    }
+
+    .step span {
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
+    .step h3 {
+      margin: 34px 0 12px;
+    }
+
+    .step p {
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    .contact-wrap {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .contact-copy h2 {
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .contact-copy p {
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 500px;
+    }
+
+    .contact-points {
+      display: grid;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .contact-points div {
+      display: flex;
+      gap: 12px;
+      color: #d9e4f2;
+    }
+
+    form {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(7, 16, 26, 0.82);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: #d9e4f2;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 48px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: #03070d;
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(20, 217, 255, 0.14);
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    form .button {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
       cursor: pointer;
     }
-    .bottom-nav-item .nav-icon{ font-size: 19px; }
-    .bottom-nav-item .nav-label{ font-size: 9.5px; font-weight: 700; }
-    .bottom-nav-item.active{ color: var(--ink); }
-    .bottom-nav-item.active .nav-icon{ transform: translateY(-1px); }
-  }
 
-  .btn{
-    font-family:'Inter',sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 9px 14px;
-    border-radius: 6px;
-    border: 1.5px solid var(--ink);
-    background: var(--card);
-    color: var(--ink);
-    cursor: pointer;
-    transition: transform .12s ease, box-shadow .12s ease;
-  }
-  .btn:hover{ transform: translateY(-1px); box-shadow: var(--shadow); }
-  .btn:active{ transform: translateY(0); }
-  .btn.primary{ background: var(--ink); color: var(--paper); }
-  .btn.ghost{ border-color: var(--line); color: var(--ink-soft); }
-  .btn.small{ padding: 6px 10px; font-size: 12px; border-radius:5px; }
-  .btn:focus-visible, input:focus-visible, select:focus-visible, .jar:focus-visible{
-    outline: 2px solid var(--brass);
-    outline-offset: 2px;
-  }
-
-  /* Month tabs styled like ledger book tabs */
-  .month-strip{
-    display:flex;
-    gap: 6px;
-    margin-bottom: 26px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .month-tab{
-    font-family:'JetBrains Mono', monospace;
-    font-size: 12.5px;
-    font-weight: 600;
-    padding: 7px 14px 8px;
-    background: var(--paper-stripe);
-    border: 1px solid var(--line);
-    border-bottom: none;
-    border-radius: 6px 6px 0 0;
-    color: var(--ink-soft);
-    cursor: pointer;
-    white-space: nowrap;
-    position: relative;
-    top: 1px;
-  }
-  .month-tab.active{
-    background: var(--card);
-    color: var(--ink);
-    border-color: var(--ink);
-    box-shadow: 0 -2px 0 var(--brass) inset;
-  }
-  .month-tab-add{
-    font-family:'JetBrains Mono', monospace;
-    font-size: 14px;
-    padding: 7px 12px 8px;
-    background: transparent;
-    border: 1px dashed var(--line);
-    border-radius: 6px 6px 0 0;
-    color: var(--ink-soft);
-    cursor: pointer;
-  }
-
-  /* Year strip — sits above the month tabs */
-  .year-strip{
-    display:flex;
-    align-items:center;
-    gap: 4px;
-    margin-bottom: 12px;
-  }
-  .year-nav-btn{
-    font-family:'JetBrains Mono', monospace;
-    font-size: 16px;
-    font-weight: 700;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    border: 1.5px solid var(--line);
-    background: var(--card);
-    color: var(--ink);
-    cursor: pointer;
-    line-height: 1;
-  }
-  .year-nav-btn:disabled{
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-  .year-nav-btn:hover:not(:disabled){ border-color: var(--ink); }
-  .year-label{
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 700;
-    padding: 0 8px;
-    min-width: 64px;
-    text-align: center;
-  }
-
-  /* Year view category breakdown rows */
-  .year-cat-row{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--paper-stripe);
-    font-size: 13px;
-  }
-  .year-cat-row:last-child{ border-bottom:none; }
-  .year-cat-swatch{
-    width: 10px; height:10px; border-radius:3px; flex: 0 0 auto;
-  }
-  .year-cat-name{
-    flex: 0 0 140px;
-    font-weight: 600;
-  }
-  .year-cat-bar-track{
-    flex: 1 1 auto;
-    height: 8px;
-    background: var(--paper-stripe);
-    border-radius: 4px;
-    overflow: hidden;
-    border: 1px solid var(--line);
-  }
-  .year-cat-bar-fill{
-    display:block;
-    height: 100%;
-  }
-  .year-cat-amt{
-    flex: 0 0 90px;
-    text-align: right;
-    font-weight: 700;
-  }
-
-  /* ---------- Summary row ---------- */
-  .summary-row{
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 28px;
-  }
-  @media (max-width: 800px){ .summary-row{ grid-template-columns: repeat(2,1fr); } }
-
-  .stat-card{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 16px 18px;
-    box-shadow: var(--shadow);
-  }
-  .stat-card .label{
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--ink-soft);
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .stat-card .value{
-    font-size: 24px;
-    font-family:'JetBrains Mono', monospace;
-    font-weight: 700;
-  }
-  .stat-card.income .value{ color: var(--green); }
-  .stat-card.expense .value{ color: var(--rust); }
-  .stat-card .value.negative{ color: var(--rust); }
-  .stat-card .value.positive{ color: var(--green); }
-
-  /* ---------- Layout grid ---------- */
-  .grid{
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 22px;
-    align-items: start;
-  }
-  @media (max-width: 920px){ .grid{ grid-template-columns: 1fr; } }
-
-  .panel{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-  }
-  .panel-head{
-    display:flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 18px 12px;
-    border-bottom: 1px solid var(--line);
-  }
-  .panel-head h2{
-    font-family: 'Fraunces', serif;
-    font-size: 17px;
-    font-weight: 600;
-    margin: 0;
-  }
-  .panel-body{ padding: 6px 0 16px; }
-  .panel-body.pad{ padding: 16px 18px; }
-
-  /* ---------- Entry form ---------- */
-  .entry-form{
-    display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr auto;
-    gap: 8px;
-    padding: 14px 18px;
-    border-bottom: 1px dashed var(--line);
-    background: var(--paper-stripe);
-  }
-  @media (max-width: 600px){ .entry-form{ grid-template-columns: 1fr 1fr; } }
-
-  .field label{
-    display:block;
-    font-size: 10.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink-soft);
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  input, select{
-    width: 100%;
-    font-family: 'Inter', sans-serif;
-    font-size: 13.5px;
-    padding: 8px 10px;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
-    background: var(--card);
-    color: var(--ink);
-  }
-  input[type="number"]{ font-family:'JetBrains Mono', monospace; }
-  input:focus, select:focus{ border-color: var(--ink); }
-  select:disabled{
-    background: var(--paper-stripe);
-    color: var(--ink-soft);
-    cursor: not-allowed;
-    border-style: dashed;
-  }
-
-  .type-toggle{
-    display:flex;
-    border: 1.5px solid var(--line);
-    border-radius: 6px;
-    overflow:hidden;
-    height: 36px;
-    margin-top:auto;
-    flex: 1 1 140px;
-    min-width: 110px;
-  }
-  .type-toggle button{
-    flex:1;
-    border:none;
-    background: var(--card);
-    font-size: 12px;
-    font-weight: 700;
-    cursor:pointer;
-    color: var(--ink-soft);
-  }
-  .type-toggle button.active[data-type="expense"]{ background: var(--rust); color: white; }
-  .type-toggle button.active[data-type="income"]{ background: var(--green); color: white; }
-
-  .entry-form-row3{
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: end;
-  }
-  .entry-form-row3 #dateInput{
-    flex: 1 1 130px;
-    min-width: 110px;
-  }
-  .entry-form-row3 #addEntryBtn{
-    flex: 1 1 100%;
-  }
-  @media (min-width: 460px){
-    .entry-form-row3 #addEntryBtn{
-      flex: 1 1 140px;
+    footer {
+      padding: 34px 0;
+      color: var(--muted);
     }
-  }
 
-  .add-row-btn{
-    align-self: end;
-    height: 36px;
-    background: var(--ink);
-    color: var(--paper);
-    border:none;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 13px;
-    cursor:pointer;
-    padding: 0 16px;
-  }
-  .add-row-btn:hover{ background: #000; }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
 
-  /* ---------- Register rows ---------- */
-  .register{ max-height: 480px; overflow-y: auto; }
-  .reg-row{
-    display:grid;
-    grid-template-columns: 84px 1fr 110px 120px 32px;
-    gap: 10px;
-    align-items:center;
-    padding: 10px 18px;
-    border-bottom: 1px solid var(--paper-stripe);
-    font-size: 13.5px;
-  }
-  .reg-row:nth-child(even){ background: var(--paper-stripe); }
-  .reg-row .date{ color: var(--ink-soft); font-family:'JetBrains Mono',monospace; font-size:12px; }
-  .reg-row .cat-tag{
-    display:inline-block;
-    font-size: 10.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: var(--brass-soft);
-    color: #7A5A1E;
-    margin-left: 6px;
-  }
-  .reg-row .amt{ text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; }
-  .reg-row .amt.income{ color: var(--green); }
-  .reg-row .amt.expense{ color: var(--rust); }
-  .reg-row .del{
-    background:none; border:none; cursor:pointer; color: var(--ink-soft);
-    font-size: 16px; line-height:1; padding: 4px;
-  }
-  .reg-row .del:hover{ color: var(--rust); }
-  .empty-state{
-    padding: 36px 18px;
-    text-align:center;
-    color: var(--ink-soft);
-    font-size: 13.5px;
-  }
-  .empty-state .big{ font-size: 28px; display:block; margin-bottom: 8px; }
+    .socials {
+      display: flex;
+      gap: 16px;
+    }
 
-  /* ---------- Jars (signature element) ---------- */
-  .jars-wrap{
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-    padding: 18px;
-  }
-  @media (max-width: 560px){ .jars-wrap{ grid-template-columns: repeat(2,1fr); } }
+    .socials a {
+      color: #d9e4f2;
+    }
 
-  .jar-unit{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap: 8px;
-  }
-  .jar{
-    width: 64px;
-    height: 84px;
-    cursor: default;
-  }
-  .jar-label{
-    font-size: 11px;
-    font-weight: 700;
-    text-align:center;
-    line-height:1.25;
-  }
-  .jar-amounts{
-    font-size: 10.5px;
-    font-family:'JetBrains Mono',monospace;
-    color: var(--ink-soft);
-    text-align:center;
-  }
-  .jar-amounts .over{ color: var(--rust); font-weight:700; }
+    @media (max-width: 920px) {
+      .nav-links {
+        display: none;
+      }
 
-  .no-jars{
-    padding: 30px 18px;
-    text-align:center;
-    color: var(--ink-soft);
-    font-size: 13px;
-  }
+      .hero {
+        min-height: auto;
+      }
 
-  .inline-add-form{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 14px 18px;
-    background: var(--paper-stripe);
-    border-bottom: 1px dashed var(--line);
-    align-items: center;
-  }
-  .inline-add-form input{
-    flex: 1 1 160px;
-    min-width: 0;
-  }
-  .inline-add-actions{
-    display: flex;
-    gap: 6px;
-    flex: 0 0 auto;
-  }
+      .hero-grid,
+      .product-row,
+      .contact-wrap {
+        grid-template-columns: 1fr;
+      }
 
-  .cat-manage{
-    padding: 12px 18px 18px;
-    border-top: 1px dashed var(--line);
-    display:flex;
-    gap: 8px;
-    flex-wrap:wrap;
-  }
-  .cat-chip{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    background: var(--paper-stripe);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 4px 10px;
-    font-size: 12px;
-  }
-  .cat-chip input[type="number"]{
-    width: 64px;
-    padding: 2px 6px;
-    font-size: 11.5px;
-    border-radius: 4px;
-  }
-  .cat-chip button{
-    background:none; border:none; cursor:pointer; color: var(--ink-soft); font-size:13px;
-  }
-  .add-cat-form{
-    display:flex;
-    gap:6px;
-    align-items:center;
-  }
-  .add-cat-form input{ width: 110px; padding: 6px 8px; font-size:12px; }
+      .brand-card {
+        max-width: 560px;
+      }
 
-  /* ---------- Goals ---------- */
-  .goal-card{
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--paper-stripe);
-  }
-  .goal-card:last-child{ border-bottom:none; }
-  .goal-top{
-    display:flex;
-    justify-content: space-between;
-    align-items:baseline;
-    margin-bottom: 8px;
-  }
-  .goal-top .name{ font-weight: 700; font-size: 14px; }
-  .goal-top .nums{ font-size: 12.5px; font-family:'JetBrains Mono',monospace; color: var(--ink-soft); }
-  .goal-bar-track{
-    height: 10px;
-    background: var(--paper-stripe);
-    border-radius: 5px;
-    overflow:hidden;
-    border: 1px solid var(--line);
-  }
-  .goal-bar-fill{
-    height: 100%;
-    background: linear-gradient(90deg, var(--brass), #DDB868);
-    border-radius: 5px 0 0 5px;
-    transition: width .4s ease;
-  }
-  .goal-bar-fill.done{ background: linear-gradient(90deg, var(--green), #3F8A68); }
-  .goal-actions{
-    display:flex;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .goal-actions input{ width: 90px; padding:6px 8px; font-size:12px; }
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
 
-  /* ---------- Loan trackers (lend / borrow) ---------- */
-  .loan-card{
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--paper-stripe);
-  }
-  .loan-card:last-child{ border-bottom:none; }
-  .loan-top{
-    display:flex;
-    justify-content: space-between;
-    align-items:baseline;
-    margin-bottom: 4px;
-  }
-  .loan-top .person{ font-weight: 700; font-size: 14px; }
-  .loan-top .balance{ font-size: 14px; font-family:'JetBrains Mono',monospace; font-weight:700; }
-  .loan-top .balance.cleared{ color: var(--green); }
-  .loan-sub{
-    font-size: 11.5px;
-    color: var(--ink-soft);
-    margin-bottom: 8px;
-  }
-  .loan-bar-track{
-    height: 8px;
-    background: var(--paper-stripe);
-    border-radius: 4px;
-    overflow:hidden;
-    border: 1px solid var(--line);
-    margin-bottom: 8px;
-  }
-  .loan-bar-fill{
-    height: 100%;
-    background: linear-gradient(90deg, var(--brass), #DDB868);
-    border-radius: 4px 0 0 4px;
-    transition: width .4s ease;
-  }
-  .loan-bar-fill.cleared{ background: linear-gradient(90deg, var(--green), #3F8A68); }
-  .loan-actions{
-    display:flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .loan-actions input{ width: 90px; padding:6px 8px; font-size:12px; }
-  .no-loans{
-    padding: 24px 18px;
-    text-align:center;
-    color: var(--ink-soft);
-    font-size: 13px;
-  }
+      .process {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
 
-  /* ---------- Chart panel ---------- */
-  .chart-legend{
-    display:flex;
-    flex-wrap:wrap;
-    gap: 10px 16px;
-    padding: 0 18px 16px;
-    font-size: 12px;
-  }
-  .chart-tabs{
-    display:flex;
-    gap: 4px;
-    padding: 12px 18px 0;
-    flex-wrap: wrap;
-  }
-  .chart-tab{
-    font-family:'Inter',sans-serif;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 6px 10px;
-    border: 1.5px solid var(--line);
-    background: var(--paper-stripe);
-    color: var(--ink-soft);
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  .chart-tab.active{
-    background: var(--ink);
-    color: var(--paper);
-    border-color: var(--ink);
-  }
-  .legend-item{ display:flex; align-items:center; gap:6px; color: var(--ink-soft); }
-  .legend-swatch{ width:10px; height:10px; border-radius:2px; display:inline-block; }
-  .legend-amt{ font-family:'JetBrains Mono',monospace; font-weight:700; color: var(--ink); margin-left: 2px; }
+    @media (max-width: 640px) {
+      .shell {
+        width: min(100% - 24px, 1160px);
+      }
 
-  footer.app-footer{
-    text-align:center;
-    color: var(--ink-soft);
-    font-size: 11.5px;
-    margin-top: 50px;
-    padding-top: 16px;
-    border-top: 1px solid var(--line);
-  }
+      .nav-inner {
+        min-height: 68px;
+      }
 
-  /* file input hidden — see top of stylesheet */
+      .brand span {
+        font-size: 0.95rem;
+      }
 
-  .toast{
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--ink);
-    color: var(--paper);
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    opacity: 0;
-    pointer-events:none;
-    transition: opacity .25s ease, transform .25s ease;
-    z-index: 50;
-    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.4);
-  }
-  .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+      .hero {
+        padding-top: 48px;
+      }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ transition: none !important; animation: none !important; }
-  }
-</style>
+      h1 {
+        font-size: clamp(2.7rem, 16vw, 4.6rem);
+      }
+
+      .hero-actions,
+      .button {
+        width: 100%;
+      }
+
+      .metrics,
+      .grid,
+      .process,
+      .fields {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: grid;
+      }
+
+      .product {
+        grid-template-columns: auto 1fr;
+      }
+
+      .product .tag {
+        grid-column: 1 / -1;
+        width: max-content;
+      }
+
+      .status-strip {
+        position: static;
+        margin-top: 12px;
+      }
+
+      section {
+        padding: 64px 0;
+      }
+    }
+  </style>
 </head>
 <body>
-
-<div class="app-shell">
-
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-mark">📒</div>
-      <div class="brand-text">
-        <div class="brand-title">Household<br>Ledger</div>
+  <nav class="nav">
+    <div class="shell nav-inner">
+      <a class="brand" href="#top" aria-label="Xylo DG Studio home">
+        <img src="assets/logo.png" alt="Xylo DG Studio logo">
+        <span>Xylo DG Studio</span>
+      </a>
+      <div class="nav-links" aria-label="Primary navigation">
+        <a href="#services">Services</a>
+        <a href="#products">Products</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
       </div>
+      <a class="button accent" href="#contact" aria-label="Book a consultation">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M8 2v4M16 2v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Book
+      </a>
     </div>
-    <button class="nav-item" data-module="dashboard">
-      <span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span>
-    </button>
-    <button class="nav-item" data-module="yearview">
-      <span class="nav-icon">📊</span><span class="nav-label">Year View</span>
-    </button>
-    <button class="nav-item" data-module="transactions">
-      <span class="nav-icon">📝</span><span class="nav-label">Transactions</span>
-    </button>
-    <button class="nav-item" data-module="jars">
-      <span class="nav-icon">🫙</span><span class="nav-label">Budget Jars</span>
-    </button>
-    <button class="nav-item" data-module="goals">
-      <span class="nav-icon">🎯</span><span class="nav-label">Savings Goals</span>
-    </button>
-    <button class="nav-item" data-module="owedtome">
-      <span class="nav-icon">🤝</span><span class="nav-label">Owed to Me</span>
-    </button>
-    <button class="nav-item" data-module="iowe">
-      <span class="nav-icon">💳</span><span class="nav-label">I Owe</span>
-    </button>
   </nav>
 
-  <div class="main-area">
-
-    <div class="save-bar">
-      <span class="save-bar-title">📒 Household Ledger</span>
-      <div class="save-bar-actions">
-        <button class="btn ghost small" id="linkFileBtn">Auto-Save to a File…</button>
-        <button class="btn ghost small" id="loadBtn">Open File</button>
-        <button class="btn primary small" id="saveBtn">Save Ledger</button>
-        <input type="file" id="fileInput" accept=".json">
-      </div>
-    </div>
-
-    <div id="iosAutosaveBanner" class="ios-banner" hidden>
-      📱 Auto-save to a file isn't available in this browser. Use <strong>Save Ledger</strong> / <strong>Open File</strong> above instead — your data stays safe either way.
-    </div>
-
-    <div id="module-dashboard" class="module-screen">
-      <div class="year-strip" id="yearStrip"></div>
-      <div class="month-strip" id="monthStrip"></div>
-      <div id="monthViewWrap">
-        <div class="summary-row" id="summaryRow"></div>
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Charts</h2>
+  <main id="top">
+    <header class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="eyebrow">Tech innovation and solutions</div>
+          <h1>Build smarter digital systems for your next stage.</h1>
+          <p class="hero-copy">Xylo DG Studio creates web apps, automation systems, AI-powered workflows, digital products, and practical tech strategy for founders, creators, and growing businesses.</p>
+          <div class="hero-actions">
+            <a class="button accent" href="#contact">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Start a project
+            </a>
+            <a class="button secondary" href="#products">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4H6ZM3 6h18M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              View products
+            </a>
           </div>
-          <div class="chart-tabs" id="chartTabs">
-            <button class="chart-tab active" data-chart="category">By Category</button>
-            <button class="chart-tab" data-chart="incomeexpense">Income vs Expense</button>
-            <button class="chart-tab" data-chart="budgetactual">Budget vs Actual</button>
-          </div>
-          <div id="chartWrap" style="padding: 10px 18px 0;"></div>
-          <div class="chart-legend" id="chartLegend"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="module-yearview" class="module-screen" hidden>
-      <div class="year-strip" id="yearStrip4"></div>
-      <div id="yearViewWrap"></div>
-    </div>
-
-    <div id="module-transactions" class="module-screen" hidden>
-      <div class="year-strip" id="yearStrip2"></div>
-      <div class="month-strip" id="monthStrip2"></div>
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Entries</h2>
-          <span class="sub" style="font-size:11px;color:var(--ink-soft);font-weight:600;" id="entryCount"></span>
-        </div>
-
-        <div class="entry-form">
-          <div class="field">
-            <label>Description</label>
-            <input type="text" id="descInput" placeholder="Grocery run, paycheck…">
-          </div>
-          <div class="field">
-            <label>Amount</label>
-            <input type="number" id="amtInput" placeholder="0.00" step="0.01" min="0">
-          </div>
-          <div class="field">
-            <label id="catLabel">Category</label>
-            <select id="catInput"></select>
-          </div>
-          <div class="entry-form-row3">
-            <div class="type-toggle" id="typeToggle">
-              <button class="active" data-type="expense">Spent</button>
-              <button data-type="income">Earned</button>
+          <div class="metrics" aria-label="Studio highlights">
+            <div class="metric">
+              <strong>AI</strong>
+              <span>Workflows and integrations</span>
             </div>
-            <input type="date" id="dateInput">
-            <button class="add-row-btn" id="addEntryBtn">Add to ledger</button>
+            <div class="metric">
+              <strong>Web</strong>
+              <span>Apps, sites, and platforms</span>
+            </div>
+            <div class="metric">
+              <strong>Scale</strong>
+              <span>Products that save time</span>
+            </div>
           </div>
         </div>
-
-        <div class="register" id="register"></div>
-      </div>
-    </div>
-
-    <div id="module-jars" class="module-screen" hidden>
-      <div class="year-strip" id="yearStrip3"></div>
-      <div class="month-strip" id="monthStrip3"></div>
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Budget Jars</h2>
-          <span style="font-size:11px;color:var(--ink-soft);">this month</span>
-        </div>
-        <div id="jarsWrap"></div>
-        <div class="cat-manage" id="catManage"></div>
-      </div>
-    </div>
-
-    <div id="module-goals" class="module-screen" hidden>
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Savings Goals</h2>
-          <button class="btn small ghost" id="addGoalBtn">+ New goal</button>
-        </div>
-        <form class="inline-add-form" id="goalForm" hidden>
-          <input type="text" id="goalNameInput" placeholder="Goal name (e.g. Trip to Goa)" required>
-          <input type="number" id="goalTargetInput" placeholder="Target amount" min="0.01" step="0.01" required>
-          <div class="inline-add-actions">
-            <button type="submit" class="btn small primary">Create goal</button>
-            <button type="button" class="btn small ghost" id="goalFormCancel">Cancel</button>
+        <div class="brand-card" aria-label="Xylo DG Studio brand system preview">
+          <div class="studio-panel">
+            <div class="hero-mark">
+              <img src="assets/logo.png" alt="Xylo DG Studio logo mark">
+            </div>
+            <div class="signal-list" aria-label="Core capabilities">
+              <span>AI Systems</span>
+              <span>Web Apps</span>
+              <span>Automation</span>
+              <span>Digital Products</span>
+            </div>
           </div>
+          <div class="status-strip">
+            <div>
+              <strong>Consulting and product studio</strong>
+              <span>Innovation, automation, launch systems</span>
+            </div>
+            <span class="pulse" aria-hidden="true"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="services">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Services built for business momentum.</h2>
+          <p>Choose a focused engagement or combine strategy, design, development, and automation into one end-to-end build.</p>
+        </div>
+        <div class="grid">
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Web and app development</h3>
+            <p>Modern websites, portals, dashboards, internal tools, SaaS MVPs, and responsive product interfaces.</p>
+          </article>
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <h3>Automation systems</h3>
+            <p>Lead routing, reports, customer journeys, content operations, CRM flows, and repeatable business processes.</p>
+          </article>
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8V4H8M12 4l-4 4M12 16v4h4M12 20l4-4M8 12H4v4M4 12l4 4M16 12h4V8M20 12l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>AI integrations</h3>
+            <p>Smart assistants, data workflows, prompt systems, business copilots, and AI features inside real products.</p>
+          </article>
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7h-9M14 17H5M17 4l3 3-3 3M8 14l-3 3 3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Tech consultation</h3>
+            <p>Product planning, platform choices, automation audits, launch roadmaps, and technical direction.</p>
+          </article>
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="2"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12" stroke="currentColor" stroke-width="2"/></svg>
+            </div>
+            <h3>Digital product builds</h3>
+            <p>Templates, mini-tools, paid resources, downloadable systems, and productized assets for online sales.</p>
+          </article>
+          <article class="tile">
+            <div class="tile-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3v18h18M7 15l4-4 3 3 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Growth systems</h3>
+            <p>Landing pages, funnels, analytics foundations, sales tools, and launch assets that support revenue.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="products" id="products">
+      <div class="shell">
+        <div class="section-head">
+          <h2>Consultation first, products always growing.</h2>
+          <p>The site is ready for client projects now and can expand into a storefront as your product library develops.</p>
+        </div>
+        <div class="product-row">
+          <article class="product-feature">
+            <div>
+              <h3>Launch digital products that save people time.</h3>
+              <p>Build templates, automation packs, AI assistants, productivity tools, business dashboards, and downloadable systems under the Xylo DG Studio brand.</p>
+            </div>
+            <a class="button accent" href="#contact">Plan a product</a>
+          </article>
+          <div class="product-list">
+            <article class="product">
+              <div class="tile-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div><strong>Business templates</strong><span>Client trackers, project planners, SOP kits, and operating systems for founders.</span></div>
+              <span class="tag">Soon</span>
+            </article>
+            <article class="product">
+              <div class="tile-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div><strong>Automation packs</strong><span>Ready-to-adapt workflows for sales, content, support, reporting, and team operations.</span></div>
+              <span class="tag">Soon</span>
+            </article>
+            <article class="product">
+              <div class="tile-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4zM12 8v4M6 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div><strong>AI micro-tools</strong><span>Small focused utilities for content, business planning, customer workflows, and productivity.</span></div>
+              <span class="tag">Soon</span>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="process">
+      <div class="shell">
+        <div class="section-head">
+          <h2>A clear path from idea to launch.</h2>
+          <p>Every engagement is structured so decisions are visible, progress is measurable, and the final system is useful from day one.</p>
+        </div>
+        <div class="process">
+          <article class="step">
+            <span>01</span>
+            <h3>Discover</h3>
+            <p>Clarify the business goal, audience, workflow, and the fastest route to value.</p>
+          </article>
+          <article class="step">
+            <span>02</span>
+            <h3>Design</h3>
+            <p>Map the experience, technical approach, core screens, data flow, and launch scope.</p>
+          </article>
+          <article class="step">
+            <span>03</span>
+            <h3>Build</h3>
+            <p>Develop the site, product, app, or automation system with clean execution.</p>
+          </article>
+          <article class="step">
+            <span>04</span>
+            <h3>Scale</h3>
+            <p>Launch, measure, improve, and turn what works into a repeatable growth engine.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="shell contact-wrap">
+        <div class="contact-copy">
+          <div class="eyebrow">Start with a conversation</div>
+          <h2>Tell us what you want to build.</h2>
+          <p>Use the form for consultations, product ideas, automation needs, app builds, or partnership conversations. Xylo DG Studio can start small and grow the system with you.</p>
+          <div class="contact-points">
+            <div><span aria-hidden="true">+</span><span>Consultation leads for service projects</span></div>
+            <div><span aria-hidden="true">+</span><span>Digital product roadmap and launch planning</span></div>
+            <div><span aria-hidden="true">+</span><span>Website, automation, and AI implementation</span></div>
+          </div>
+        </div>
+        <form name="xylodg-contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="xylodg-contact">
+          <p style="display:none">
+            <label>Do not fill this out <input name="bot-field"></label>
+          </p>
+          <div class="fields">
+            <label>Name
+              <input name="name" autocomplete="name" required>
+            </label>
+            <label>Email
+              <input type="email" name="email" autocomplete="email" required>
+            </label>
+            <label>Project type
+              <select name="project-type" required>
+                <option value="">Select one</option>
+                <option>Consultation</option>
+                <option>Website or app</option>
+                <option>Automation</option>
+                <option>AI integration</option>
+                <option>Digital product</option>
+              </select>
+            </label>
+            <label>Budget range
+              <select name="budget-range">
+                <option value="">Select one</option>
+                <option>Under $1,000</option>
+                <option>$1,000 to $5,000</option>
+                <option>$5,000 to $15,000</option>
+                <option>$15,000+</option>
+              </select>
+            </label>
+            <label class="full">Message
+              <textarea name="message" placeholder="What do you want to build, improve, automate, or sell?" required></textarea>
+            </label>
+          </div>
+          <button class="button accent" type="submit">Send project request</button>
         </form>
-        <div id="goalsWrap"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <a class="brand" href="#top">
+        <img src="assets/logo.png" alt="">
+        <span>Xylo DG Studio</span>
+      </a>
+      <span>Digital products, IT solutions, consultation, innovation.</span>
+      <div class="socials">
+        <a href="https://xylodgstudio.com">xylodgstudio.xyz</a>
       </div>
     </div>
-
-    <div id="module-owedtome" class="module-screen" hidden>
-      <div class="summary-row" id="owedToMeSummaryRow" style="grid-template-columns: 1fr;"></div>
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Money Owed to Me</h2>
-          <button class="btn small ghost" id="addLentBtn">+ Add</button>
-        </div>
-        <form class="inline-add-form" id="lentForm" hidden>
-          <input type="text" id="lentPersonInput" placeholder="Who owes you?" required>
-          <input type="number" id="lentAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
-          <input type="date" id="lentDateInput" required>
-          <div class="inline-add-actions">
-            <button type="submit" class="btn small primary">Add</button>
-            <button type="button" class="btn small ghost" id="lentFormCancel">Cancel</button>
-          </div>
-        </form>
-        <div id="lentWrap"></div>
-      </div>
-    </div>
-
-    <div id="module-iowe" class="module-screen" hidden>
-      <div class="summary-row" id="iOweSummaryRow" style="grid-template-columns: 1fr;"></div>
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Money I Owe</h2>
-          <button class="btn small ghost" id="addBorrowedBtn">+ Add</button>
-        </div>
-        <form class="inline-add-form" id="borrowedForm" hidden>
-          <input type="text" id="borrowedPersonInput" placeholder="Who do you owe?" required>
-          <input type="number" id="borrowedAmountInput" placeholder="Amount" min="0.01" step="0.01" required>
-          <input type="date" id="borrowedDateInput" required>
-          <div class="inline-add-actions">
-            <button type="submit" class="btn small primary">Add</button>
-            <button type="button" class="btn small ghost" id="borrowedFormCancel">Cancel</button>
-          </div>
-        </form>
-        <div id="borrowedWrap"></div>
-      </div>
-    </div>
-
-    <footer class="app-footer">
-      Your data lives only in this browser tab — nothing is sent anywhere. Use <strong>Save Ledger</strong> often to keep a backup file.
-    </footer>
-  </div>
-
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="bottom-nav-item active" data-module="dashboard">
-      <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
-    </button>
-    <button class="bottom-nav-item" data-module="yearview">
-      <span class="nav-icon">📊</span><span class="nav-label">Year</span>
-    </button>
-    <button class="bottom-nav-item" data-module="transactions">
-      <span class="nav-icon">📝</span><span class="nav-label">Entries</span>
-    </button>
-    <button class="bottom-nav-item" data-module="jars">
-      <span class="nav-icon">🫙</span><span class="nav-label">Jars</span>
-    </button>
-    <button class="bottom-nav-item" data-module="goals">
-      <span class="nav-icon">🎯</span><span class="nav-label">Goals</span>
-    </button>
-    <button class="bottom-nav-item" data-module="owedtome">
-      <span class="nav-icon">🤝</span><span class="nav-label">Owed</span>
-    </button>
-    <button class="bottom-nav-item" data-module="iowe">
-      <span class="nav-icon">💳</span><span class="nav-label">I Owe</span>
-    </button>
-  </nav>
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-
-<script>
-(function(){
-  "use strict";
-
-  /* ---------------- State ---------------- */
-  const DEFAULT_CATEGORIES = [
-    { id: 'emis',     name: 'EMIs',              budget: 0,    color: '#B5481F' },
-    { id: 'cc',       name: 'Credit Card Bills', budget: 0,    color: '#A14F7C' },
-    { id: 'utilities',name: 'Utilities',         budget: 250,  color: '#3D7A9E' },
-    { id: 'transport',name: 'Transport (Fuel & Maintenance)', budget: 200, color: '#C99A3E' },
-    { id: 'fun',      name: 'Fun & Extras',      budget: 150,  color: '#6B5CA5' },
-    { id: 'food',     name: 'Outside Food',      budget: 300,  color: '#5E7C3A' },
-    { id: 'housing',  name: 'Housing',           budget: 1200, color: '#2D6A4F' },
-    { id: 'savings',  name: 'Savings',           budget: 0,    color: '#D4A24C' },
-    { id: 'loans_repayments', name: 'Loans & Repayments', budget: 0, color: '#8C6B4F' },
-  ];
-  const LOANS_CAT_ID = 'loans_repayments';
-
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  function monthKey(d){ return d.slice(0,7); } // "2026-06"
-  function todayISO(){ return new Date().toISOString().slice(0,10); }
-  function thisMonthKey(){ return todayISO().slice(0,7); }
-  function thisYearKey(){ return todayISO().slice(0,4); }
-  function yearOf(mKey){ return mKey.slice(0,4); }
-  function monthIndexOf(mKey){ return Number(mKey.slice(5,7)) - 1; } // 0-11
-  function buildMonthKey(yearStr, monthIdx0){ return `${yearStr}-${String(monthIdx0+1).padStart(2,'0')}`; }
-
-  function defaultState(){
-    return {
-      version: 3,
-      categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
-      entries: [],     // {id, date, desc, amount, type:'income'|'expense', cat}
-      goals: [],       // {id, name, target, saved} -- ongoing, not tied to year/month
-      lent: [],        // {id, person, amount, returned, date}  -- ongoing
-      borrowed: [],    // {id, person, amount, repaid, date}    -- ongoing
-      years: [thisYearKey()],     // explicit list of years that exist, e.g. ["2026"]
-      currentYear: thisYearKey(),
-      currentMonth: thisMonthKey(),
-    };
-  }
-
-  let state = defaultState();
-  let currentType = 'expense';
-  // (Year View is now its own module; no separate toggle state needed)
-
-  /* ---------------- Persistence (file based, no localStorage) ---------------- */
-  /* ---------------- File System Access (auto-save) where supported ---------------- */
-  const FS_ACCESS_SUPPORTED = !!window.showSaveFilePicker && !!window.showOpenFilePicker;
-  let linkedFileHandle = null;
-  let autosaveTimer = null;
-  let autosaveInFlight = false;
-
-  async function writeStateToHandle(handle){
-    const writable = await handle.createWritable();
-    await writable.write(JSON.stringify(state, null, 2));
-    await writable.close();
-  }
-
-  function scheduleAutosave(){
-    if(!linkedFileHandle) return;
-    clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(async () => {
-      if(autosaveInFlight) return;
-      autosaveInFlight = true;
-      try{
-        await writeStateToHandle(linkedFileHandle);
-        showToast('Auto-saved ✓');
-      }catch(err){
-        showToast('Auto-save failed — use Save Ledger to retry.');
-      }finally{
-        autosaveInFlight = false;
-      }
-    }, 600);
-  }
-
-  async function linkSaveFile(){
-    try{
-      const handle = await window.showSaveFilePicker({
-        suggestedName: `household-ledger-${todayISO()}.json`,
-        types: [{ description: 'Ledger JSON', accept: {'application/json': ['.json']} }]
-      });
-      linkedFileHandle = handle;
-      await writeStateToHandle(handle);
-      updateSaveLoadUI();
-      showToast('Linked! This file will auto-save from now on ✓');
-    }catch(err){
-      if(err && err.name !== 'AbortError'){
-        showToast('Could not link a file in this browser.');
-      }
-    }
-  }
-
-  function migrateState(loaded){
-    const s = loaded;
-    if(!Array.isArray(s.lent)) s.lent = [];
-    if(!Array.isArray(s.borrowed)) s.borrowed = [];
-    if(!s.currentMonth) s.currentMonth = thisMonthKey();
-
-    // v1 -> v2: visibleMonths (flat list of "YYYY-MM") -> years (list of "YYYY")
-    if(!Array.isArray(s.years)){
-      const yearSet = new Set();
-      if(Array.isArray(s.visibleMonths)){
-        s.visibleMonths.forEach(mk => yearSet.add(yearOf(mk)));
-      }
-      (s.entries||[]).forEach(e => yearSet.add(yearOf(monthKey(e.date))));
-      yearSet.add(yearOf(s.currentMonth));
-      yearSet.add(thisYearKey());
-      s.years = Array.from(yearSet).sort();
-      delete s.visibleMonths;
-    }
-    if(!s.currentYear) s.currentYear = yearOf(s.currentMonth);
-    if(!s.years.includes(s.currentYear)) s.years.push(s.currentYear);
-    s.years.sort();
-
-    // v2 -> v3: ensure the reserved Loans & Repayments category exists
-    if(!Array.isArray(s.categories)) s.categories = [];
-    if(!s.categories.some(c => c.id === LOANS_CAT_ID)){
-      s.categories.push({ id: LOANS_CAT_ID, name: 'Loans & Repayments', budget: 0, color: '#8C6B4F' });
-    }
-
-    s.version = 3;
-    return s;
-  }
-
-  async function openLinkedFile(){
-    try{
-      const [handle] = await window.showOpenFilePicker({
-        types: [{ description: 'Ledger JSON', accept: {'application/json': ['.json']} }]
-      });
-      const file = await handle.getFile();
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
-        throw new Error('bad shape');
-      }
-      state = migrateState(parsed);
-      linkedFileHandle = handle;
-      renderAll();
-      updateSaveLoadUI();
-      showToast('Ledger loaded and linked for auto-save ✓');
-    }catch(err){
-      if(err && err.name !== 'AbortError'){
-        showToast('Could not read that file — is it a saved ledger?');
-      }
-    }
-  }
-
-  function updateSaveLoadUI(){
-    const saveBtn = document.getElementById('saveBtn');
-    const linkBtn = document.getElementById('linkFileBtn');
-    if(!FS_ACCESS_SUPPORTED){
-      if(linkBtn) linkBtn.style.display = 'none';
-      return;
-    }
-    if(linkedFileHandle){
-      saveBtn.textContent = 'Save Now';
-      linkBtn.textContent = 'Switch File';
-    }else{
-      saveBtn.textContent = 'Save Ledger';
-      linkBtn.textContent = 'Auto-Save to a File…';
-    }
-  }
-
-  /* ---------------- Fallback: manual download / upload (works everywhere, incl. iPhone) ---------------- */
-  function downloadJSON(){
-    const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const stamp = todayISO();
-    a.href = url;
-    a.download = `household-ledger-${stamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    showToast('Ledger saved to a file ✓');
-  }
-
-  async function handleSaveClick(){
-    if(linkedFileHandle){
-      try{
-        await writeStateToHandle(linkedFileHandle);
-        showToast('Saved ✓');
-      }catch(err){
-        showToast('Could not save — try Switch File or download instead.');
-      }
-    }else{
-      downloadJSON();
-    }
-  }
-
-  function loadFromFile(file){
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try{
-        const parsed = JSON.parse(e.target.result);
-        if(!parsed || !Array.isArray(parsed.entries) || !Array.isArray(parsed.categories)){
-          throw new Error('bad shape');
-        }
-        state = migrateState(parsed);
-        renderAll();
-        showToast('Ledger loaded ✓');
-      }catch(err){
-        showToast('Could not read that file — is it a saved ledger?');
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  let toastTimer = null;
-  function showToast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
-  }
-
-  /* ---------------- Helpers ---------------- */
-  function fmt(n){
-    const neg = n < 0;
-    const v = Math.abs(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
-    return (neg ? '-₹' : '₹') + v;
-  }
-  function uid(){ return Math.random().toString(36).slice(2,10); }
-
-  function logLoanEntry(type, desc, amount, date){
-    // type: 'income' | 'expense' -- always filed under the reserved Loans & Repayments category
-    date = date || todayISO();
-    state.entries.push({
-      id: uid(),
-      date,
-      desc,
-      amount,
-      type,
-      cat: LOANS_CAT_ID
-    });
-    const entryYear = yearOf(monthKey(date));
-    if(!state.years.includes(entryYear)){ state.years.push(entryYear); state.years.sort(); }
-    state.currentYear = entryYear;
-    state.currentMonth = monthKey(date);
-  }
-
-  function entriesForMonth(mKey){
-    return state.entries.filter(e => monthKey(e.date) === mKey);
-  }
-
-  function entriesForYear(yearStr){
-    return state.entries.filter(e => yearOf(monthKey(e.date)) === yearStr);
-  }
-
-  function catName(id){
-    const c = state.categories.find(c=>c.id===id);
-    return c ? c.name : id;
-  }
-  function catColor(id){
-    const c = state.categories.find(c=>c.id===id);
-    return c ? c.color : '#999';
-  }
-
-  /* ---------------- Rendering ---------------- */
-  function renderAll(){
-    renderYearStrip();
-    renderMonthStrip();
-    renderSummary();
-    renderCategorySelect();
-    renderRegister();
-    renderJars();
-    renderCatManage();
-    renderGoals();
-    renderLent();
-    renderBorrowed();
-    renderChart();
-    renderLoanSummaries();
-    if(currentModule === 'yearview'){
-      renderYearView();
-    }
-    scheduleAutosave();
-  }
-
-  function buildYearStripInto(containerId){
-    const wrap = document.getElementById(containerId);
-    if(!wrap) return;
-    wrap.innerHTML = '';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'year-nav-btn';
-    prevBtn.textContent = '‹';
-    prevBtn.title = 'Previous year';
-    const years = state.years.slice().sort();
-    const idx = years.indexOf(state.currentYear);
-    prevBtn.disabled = idx <= 0;
-    prevBtn.addEventListener('click', () => {
-      state.currentYear = years[idx-1];
-      state.currentMonth = buildMonthKey(state.currentYear, monthIndexOf(state.currentMonth));
-      renderAll();
-    });
-    wrap.appendChild(prevBtn);
-
-    const label = document.createElement('span');
-    label.className = 'year-label';
-    label.textContent = state.currentYear;
-    wrap.appendChild(label);
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'year-nav-btn';
-    nextBtn.textContent = '›';
-    nextBtn.title = 'Next year';
-    nextBtn.disabled = idx >= years.length - 1;
-    nextBtn.addEventListener('click', () => {
-      state.currentYear = years[idx+1];
-      state.currentMonth = buildMonthKey(state.currentYear, monthIndexOf(state.currentMonth));
-      renderAll();
-    });
-    wrap.appendChild(nextBtn);
-
-    const addYearBtn = document.createElement('button');
-    addYearBtn.className = 'btn small ghost';
-    addYearBtn.style.marginLeft = '10px';
-    addYearBtn.textContent = '+ Add Year';
-    addYearBtn.addEventListener('click', () => {
-      const maxYear = Math.max(...state.years.map(Number));
-      const newYear = String(maxYear + 1);
-      if(!state.years.includes(newYear)) state.years.push(newYear);
-      state.years.sort();
-      state.currentYear = newYear;
-      state.currentMonth = buildMonthKey(newYear, monthIndexOf(state.currentMonth));
-      renderAll();
-    });
-    wrap.appendChild(addYearBtn);
-  }
-
-  function renderYearStrip(){
-    buildYearStripInto('yearStrip');
-    buildYearStripInto('yearStrip2');
-    buildYearStripInto('yearStrip3');
-    buildYearStripInto('yearStrip4');
-  }
-
-  function buildMonthStripInto(containerId){
-    const wrap = document.getElementById(containerId);
-    if(!wrap) return;
-    wrap.innerHTML = '';
-    MONTH_NAMES.forEach((name, idx) => {
-      const k = buildMonthKey(state.currentYear, idx);
-      const btn = document.createElement('button');
-      btn.className = 'month-tab' + (k === state.currentMonth ? ' active' : '');
-      btn.textContent = name;
-      btn.addEventListener('click', () => {
-        state.currentMonth = k;
-        renderAll();
-      });
-      wrap.appendChild(btn);
-    });
-  }
-
-  function renderMonthStrip(){
-    buildMonthStripInto('monthStrip');
-    buildMonthStripInto('monthStrip2');
-    buildMonthStripInto('monthStrip3');
-  }
-
-  function renderSummary(){
-    const entries = entriesForMonth(state.currentMonth);
-    const income = entries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-    const expense = entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-    const net = income - expense;
-    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0);
-
-    const wrap = document.getElementById('summaryRow');
-    wrap.innerHTML = `
-      <div class="stat-card income">
-        <div class="label">Income</div>
-        <div class="value num">${fmt(income)}</div>
-      </div>
-      <div class="stat-card expense">
-        <div class="label">Spent</div>
-        <div class="value num">${fmt(expense)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Net</div>
-        <div class="value num ${net>=0?'positive':'negative'}">${fmt(net)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Budgeted / mo</div>
-        <div class="value num">${fmt(totalBudget)}</div>
-      </div>
-    `;
-  }
-
-  function renderCategorySelect(){
-    const sel = document.getElementById('catInput');
-    sel.innerHTML = state.categories.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
-    updateCatInputState();
-  }
-
-  function escapeHTML(s){
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  function renderRegister(){
-    const wrap = document.getElementById('register');
-    const entries = entriesForMonth(state.currentMonth).slice().sort((a,b)=> b.date.localeCompare(a.date));
-    document.getElementById('entryCount').textContent = entries.length ? `${entries.length} entr${entries.length===1?'y':'ies'}` : '';
-
-    if(entries.length === 0){
-      wrap.innerHTML = `<div class="empty-state"><span class="big">📒</span>Nothing logged yet this month.<br>Add your first entry above.</div>`;
-      return;
-    }
-
-    wrap.innerHTML = entries.map(e => {
-      const d = new Date(e.date + 'T00:00:00');
-      const dStr = d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
-      const sign = e.type === 'income' ? '+' : '−';
-      return `
-        <div class="reg-row" data-id="${e.id}">
-          <span class="date">${dStr}</span>
-          <span>${escapeHTML(e.desc || '(no description)')}<span class="cat-tag" style="background:${catColor(e.cat)}22;color:${catColor(e.cat)};">${escapeHTML(catName(e.cat))}</span></span>
-          <span class="amt ${e.type}">${sign}${fmt(e.amount)}</span>
-          <span></span>
-          <button class="del" title="Delete entry" aria-label="Delete entry">✕</button>
-        </div>`;
-    }).join('');
-
-    wrap.querySelectorAll('.del').forEach(btn => {
-      btn.addEventListener('click', (ev) => {
-        const row = ev.target.closest('.reg-row');
-        const id = row.getAttribute('data-id');
-        state.entries = state.entries.filter(e => e.id !== id);
-        renderAll();
-      });
-    });
-  }
-
-  function renderJars(){
-    const wrap = document.getElementById('jarsWrap');
-    if(state.categories.length === 0){
-      wrap.innerHTML = `<div class="no-jars">No categories yet. Add one below to start a jar.</div>`;
-      scheduleAutosave();
-      return;
-    }
-    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
-    const spentByCat = {};
-    entries.forEach(e => { spentByCat[e.cat] = (spentByCat[e.cat]||0) + e.amount; });
-
-    wrap.innerHTML = `<div class="jars-wrap">${state.categories.map(c => {
-      const spent = spentByCat[c.id] || 0;
-      const budget = Number(c.budget) || 0;
-      const pct = budget > 0 ? Math.min(spent / budget, 1) : (spent > 0 ? 1 : 0);
-      const over = budget > 0 && spent > budget;
-      const fillColor = over ? '#B5481F' : c.color;
-      const fillHeight = 70 * pct; // jar interior height ~70
-      const fillY = 78 - fillHeight; // bottom anchored, jar interior starts y=8 ends y=78
-      return `
-        <div class="jar-unit">
-          <svg class="jar" viewBox="0 0 64 84" aria-label="${escapeHTML(c.name)} jar, ${Math.round(pct*100)} percent full">
-            <defs>
-              <clipPath id="clip-${c.id}">
-                <path d="M10,10 L54,10 L52,80 Q52,82 50,82 L14,82 Q12,82 12,80 Z" />
-              </clipPath>
-            </defs>
-            <!-- jar outline -->
-            <path d="M10,10 L54,10 L52,80 Q52,82 50,82 L14,82 Q12,82 12,80 Z"
-                  fill="#FFFEFB" stroke="#1B1F2A" stroke-width="2"/>
-            <!-- lid -->
-            <rect x="14" y="4" width="36" height="8" rx="2" fill="#1B1F2A"/>
-            <!-- fill -->
-            <rect x="10" y="${fillY.toFixed(1)}" width="44" height="${(82-fillY).toFixed(1)}"
-                  fill="${fillColor}" opacity="0.85" clip-path="url(#clip-${c.id})"
-                  style="transition: y .5s ease, height .5s ease;"/>
-            <!-- shine -->
-            <rect x="15" y="14" width="4" height="60" fill="white" opacity="0.25" clip-path="url(#clip-${c.id})"/>
-          </svg>
-          <div class="jar-label">${escapeHTML(c.name)}</div>
-          <div class="jar-amounts">${fmt(spent)} / ${fmt(budget)}${over ? `<div class="over">over by ${fmt(spent-budget)}</div>` : ''}</div>
-        </div>
-      `;
-    }).join('')}</div>`;
-    scheduleAutosave();
-  }
-
-  function renderCatManage(){
-    const wrap = document.getElementById('catManage');
-    wrap.innerHTML = state.categories.map(c => `
-      <div class="cat-chip" data-id="${c.id}">
-        <span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block;"></span>
-        ${escapeHTML(c.name)}
-        <input type="number" min="0" step="1" value="${c.budget}" title="Monthly budget" class="budget-edit">
-        <button class="remove-cat" title="Remove category" aria-label="Remove category">✕</button>
-      </div>
-    `).join('') + `
-      <form class="add-cat-form" id="addCatForm">
-        <input type="text" id="newCatName" placeholder="New category…" required>
-        <input type="number" id="newCatBudget" placeholder="Budget" min="0" step="1" style="width:80px;" required>
-        <button type="submit" class="btn small">Add</button>
-      </form>
-    `;
-
-    wrap.querySelectorAll('.budget-edit').forEach(inp => {
-      inp.addEventListener('change', (ev) => {
-        const id = ev.target.closest('.cat-chip').getAttribute('data-id');
-        const cat = state.categories.find(c=>c.id===id);
-        cat.budget = Number(ev.target.value) || 0;
-        renderJars();
-        renderSummary();
-      });
-    });
-    wrap.querySelectorAll('.remove-cat').forEach(btn => {
-      btn.addEventListener('click', (ev) => {
-        const chip = ev.target.closest('.cat-chip');
-        const id = chip.getAttribute('data-id');
-        const inUse = state.entries.some(e=>e.cat===id);
-
-        if(inUse && btn.getAttribute('data-confirm') !== 'true'){
-          btn.setAttribute('data-confirm', 'true');
-          btn.textContent = '✓ Sure?';
-          showToast('Entries use this category — click again to remove anyway.');
-          setTimeout(() => {
-            if(btn.isConnected){
-              btn.setAttribute('data-confirm', 'false');
-              btn.textContent = '✕';
-            }
-          }, 4000);
-          return;
-        }
-
-        state.categories = state.categories.filter(c=>c.id!==id);
-        renderAll();
-      });
-    });
-
-    const COLORS = ['#2D6A4F','#B5481F','#C99A3E','#6B5CA5','#3D7A9E','#A14F7C','#5E7C3A'];
-    document.getElementById('addCatForm').addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const name = document.getElementById('newCatName').value.trim();
-      const budget = Number(document.getElementById('newCatBudget').value) || 0;
-      if(!name) return;
-      state.categories.push({
-        id: uid(),
-        name,
-        budget,
-        color: COLORS[state.categories.length % COLORS.length]
-      });
-      renderAll();
-    });
-  }
-
-  function renderGoals(){
-    const wrap = document.getElementById('goalsWrap');
-    if(state.goals.length === 0){
-      wrap.innerHTML = `<div class="no-jars">No savings goals yet. Click "New goal" to start one — a vacation, an emergency fund, anything.</div>`;
-      scheduleAutosave();
-      return;
-    }
-    wrap.innerHTML = state.goals.map(g => {
-      const pct = g.target > 0 ? Math.min(g.saved / g.target, 1) : 0;
-      const done = g.saved >= g.target && g.target > 0;
-      return `
-        <div class="goal-card" data-id="${g.id}">
-          <div class="goal-top">
-            <span class="name">${escapeHTML(g.name)} ${done ? '🎉' : ''}</span>
-            <span class="nums">${fmt(g.saved)} / ${fmt(g.target)}</span>
-          </div>
-          <div class="goal-bar-track">
-            <div class="goal-bar-fill ${done?'done':''}" style="width:${(pct*100).toFixed(1)}%"></div>
-          </div>
-          <div class="goal-actions">
-            <input type="number" min="0" step="1" placeholder="Add amount" class="goal-add-input">
-            <button class="btn small goal-add-btn">Add to savings</button>
-            <button class="btn small ghost goal-del-btn" style="margin-left:auto;">Remove</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    wrap.querySelectorAll('.goal-card').forEach(card => {
-      const id = card.getAttribute('data-id');
-      card.querySelector('.goal-add-btn').addEventListener('click', () => {
-        const inp = card.querySelector('.goal-add-input');
-        const amt = Number(inp.value);
-        if(!amt) return;
-        const g = state.goals.find(g=>g.id===id);
-        g.saved += amt;
-        renderGoals();
-      });
-      card.querySelector('.goal-del-btn').addEventListener('click', () => {
-        state.goals = state.goals.filter(g=>g.id!==id);
-        renderGoals();
-      });
-    });
-    scheduleAutosave();
-  }
-
-  // ---- Loan trackers: "lent" = money owed TO you, "borrowed" = money YOU owe ----
-
-  function renderLoanList(containerId, list, kind){
-    // kind: 'lent' (paidField='returned', verb='Log repayment received')
-    //       'borrowed' (paidField='repaid', verb='Log repayment made')
-    const wrap = document.getElementById(containerId);
-    const paidField = kind === 'lent' ? 'returned' : 'repaid';
-    const emptyMsg = kind === 'lent'
-      ? 'Nobody owes you anything right now. Click "+ Add" when you lend money to someone.'
-      : 'You don\'t owe anyone right now. Click "+ Add" when you borrow money from someone.';
-
-    if(list.length === 0){
-      wrap.innerHTML = `<div class="no-loans">${emptyMsg}</div>`;
-      scheduleAutosave();
-      return;
-    }
-
-    wrap.innerHTML = list.map(item => {
-      const paid = item[paidField] || 0;
-      const outstanding = Math.max(item.amount - paid, 0);
-      const pct = item.amount > 0 ? Math.min(paid / item.amount, 1) : 0;
-      const cleared = outstanding <= 0;
-      const subLabel = kind === 'lent' ? 'they\'ve paid back' : 'you\'ve paid back';
-      return `
-        <div class="loan-card" data-id="${item.id}">
-          <div class="loan-top">
-            <span class="person">${escapeHTML(item.person)} ${cleared ? '✅' : ''}</span>
-            <span class="balance ${cleared?'cleared':''}">${cleared ? 'Cleared' : fmt(outstanding) + ' left'}</span>
-          </div>
-          <div class="loan-sub">${fmt(paid)} of ${fmt(item.amount)} ${subLabel}</div>
-          <div class="loan-bar-track">
-            <div class="loan-bar-fill ${cleared?'cleared':''}" style="width:${(pct*100).toFixed(1)}%"></div>
-          </div>
-          <div class="loan-actions">
-            <input type="number" min="0" step="1" placeholder="Amount" class="loan-pay-input" ${cleared?'disabled':''}>
-            <button class="btn small loan-pay-btn" ${cleared?'disabled':''}>${kind==='lent' ? 'Log payment received' : 'Log payment made'}</button>
-            <button class="btn small ghost loan-del-btn" style="margin-left:auto;">Remove</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    wrap.querySelectorAll('.loan-card').forEach(card => {
-      const id = card.getAttribute('data-id');
-      const payBtn = card.querySelector('.loan-pay-btn');
-      if(payBtn){
-        payBtn.addEventListener('click', () => {
-          const inp = card.querySelector('.loan-pay-input');
-          const amt = Number(inp.value);
-          if(!amt || amt <= 0) return;
-          const item = list.find(x=>x.id===id);
-          const before = item[paidField] || 0;
-          const after = Math.min(before + amt, item.amount);
-          const actuallyLogged = after - before; // capped to what's actually outstanding
-          item[paidField] = after;
-
-          if(actuallyLogged > 0){
-            if(kind === 'lent'){
-              logLoanEntry('income', `Repayment from ${item.person}`, actuallyLogged);
-            }else{
-              logLoanEntry('expense', `Repaid to ${item.person}`, actuallyLogged);
-            }
-          }
-          renderAll();
-          if(kind === 'lent'){
-            showToast(`Logged ₹${actuallyLogged} received from ${item.person} as income ✓`);
-          }else{
-            showToast(`Logged ₹${actuallyLogged} paid to ${item.person} as an expense ✓`);
-          }
-        });
-      }
-      card.querySelector('.loan-del-btn').addEventListener('click', () => {
-        if(kind === 'lent'){
-          state.lent = state.lent.filter(x=>x.id!==id);
-          renderLent();
-        }else{
-          state.borrowed = state.borrowed.filter(x=>x.id!==id);
-          renderBorrowed();
-        }
-      });
-    });
-    scheduleAutosave();
-  }
-
-  function renderLent(){ renderLoanList('lentWrap', state.lent, 'lent'); }
-  function renderBorrowed(){ renderLoanList('borrowedWrap', state.borrowed, 'borrowed'); }
-
-  function renderLoanSummaries(){
-    const owedToMeTotal = state.lent.reduce((s,x) => s + Math.max(x.amount - (x.returned||0), 0), 0);
-    const iOweTotal = state.borrowed.reduce((s,x) => s + Math.max(x.amount - (x.repaid||0), 0), 0);
-
-    const owedWrap = document.getElementById('owedToMeSummaryRow');
-    if(owedWrap){
-      owedWrap.innerHTML = `
-        <div class="stat-card income">
-          <div class="label">Total Outstanding Owed to Me</div>
-          <div class="value num">${fmt(owedToMeTotal)}</div>
-        </div>
-      `;
-    }
-    const oweWrap = document.getElementById('iOweSummaryRow');
-    if(oweWrap){
-      oweWrap.innerHTML = `
-        <div class="stat-card expense">
-          <div class="label">Total Outstanding I Owe</div>
-          <div class="value num">${fmt(iOweTotal)}</div>
-        </div>
-      `;
-    }
-  }
-
-
-  function drawDonut(slices, centerLabel, centerSub){
-    const total = slices.reduce((s,x)=>s+x.value, 0);
-    const chartWrap = document.getElementById('chartWrap');
-    const legend = document.getElementById('chartLegend');
-
-    if(total <= 0){
-      chartWrap.innerHTML = `<div class="no-jars" style="padding:24px 0;">Nothing to chart yet this month.</div>`;
-      legend.innerHTML = '';
-      return;
-    }
-
-    const usable = slices.filter(s => s.value > 0).sort((a,b)=>b.value-a.value);
-    const cx = 90, cy = 90, r = 70;
-    let angle = -90;
-    const arcs = usable.map(s => {
-      const frac = s.value / total;
-      const startAngle = angle;
-      const endAngle = angle + frac*360;
-      angle = endAngle;
-      const large = (endAngle-startAngle) > 180 ? 1 : 0;
-      const toRad = a => (a * Math.PI/180);
-      const x1 = cx + r*Math.cos(toRad(startAngle));
-      const y1 = cy + r*Math.sin(toRad(startAngle));
-      const x2 = cx + r*Math.cos(toRad(endAngle));
-      const y2 = cy + r*Math.sin(toRad(endAngle));
-      if(frac >= 0.999){
-        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${s.color}" />`;
-      }
-      return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${s.color}" stroke="#FFFEFB" stroke-width="1.5"/>`;
-    }).join('');
-
-    chartWrap.innerHTML = `
-      <svg viewBox="0 0 180 180" style="width:180px; height:180px; display:block; margin: 0 auto 8px;">
-        ${arcs}
-        <circle cx="${cx}" cy="${cy}" r="38" fill="#FFFEFB" />
-        <text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12.5" font-weight="700" fill="#1B1F2A">${centerLabel}</text>
-        <text x="${cx}" y="${cy+12}" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#5A5A52" letter-spacing="0.05em">${centerSub}</text>
-      </svg>
-    `;
-
-    legend.innerHTML = usable.map(s => `
-      <span class="legend-item">
-        <span class="legend-swatch" style="background:${s.color};"></span>
-        ${escapeHTML(s.label)}
-        <span class="legend-amt">${fmt(s.value)}</span>
-      </span>
-    `).join('');
-  }
-
-  function renderChartByCategory(){
-    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
-    const byCat = {};
-    entries.forEach(e => { byCat[e.cat] = (byCat[e.cat]||0) + e.amount; });
-    const total = Object.values(byCat).reduce((a,b)=>a+b,0);
-    const slices = Object.keys(byCat).map(catId => ({
-      label: catName(catId), value: byCat[catId], color: catColor(catId)
-    }));
-    drawDonut(slices, fmt(total).replace('.00',''), 'SPENT');
-  }
-
-  function renderChartIncomeExpense(){
-    const entries = entriesForMonth(state.currentMonth);
-    const income = entries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-    const expense = entries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-    const slices = [
-      { label: 'Income', value: income, color: '#2D6A4F' },
-      { label: 'Expense', value: expense, color: '#B5481F' },
-    ];
-    const net = income - expense;
-    drawDonut(slices, fmt(net).replace('.00',''), 'NET');
-  }
-
-  function renderChartBudgetActual(){
-    const entries = entriesForMonth(state.currentMonth).filter(e=>e.type==='expense');
-    const spent = entries.reduce((s,e)=>s+e.amount,0);
-    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0);
-    const remaining = Math.max(totalBudget - spent, 0);
-    const overspend = Math.max(spent - totalBudget, 0);
-    const slices = [
-      { label: 'Spent (within budget)', value: Math.min(spent, totalBudget), color: '#C99A3E' },
-      { label: 'Remaining budget', value: remaining, color: '#DCE8E0' },
-    ];
-    if(overspend > 0){
-      slices.push({ label: 'Over budget', value: overspend, color: '#B5481F' });
-    }
-    const pct = totalBudget > 0 ? Math.round((spent/totalBudget)*100) : 0;
-    drawDonut(slices, pct + '%', 'OF BUDGET');
-  }
-
-  let currentChart = 'category';
-  function renderChart(){
-    if(currentChart === 'category') renderChartByCategory();
-    else if(currentChart === 'incomeexpense') renderChartIncomeExpense();
-    else if(currentChart === 'budgetactual') renderChartBudgetActual();
-  }
-
-  /* ---------------- Year View ---------------- */
-  function renderYearView(){
-    const wrap = document.getElementById('yearViewWrap');
-    const yearEntries = entriesForYear(state.currentYear);
-    const income = yearEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-    const expense = yearEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-    const net = income - expense;
-    const totalBudget = state.categories.reduce((s,c)=>s+(Number(c.budget)||0),0) * 12;
-
-    // per-month totals for bar chart
-    const monthTotals = MONTH_NAMES.map((name, idx) => {
-      const mk = buildMonthKey(state.currentYear, idx);
-      const mEntries = entriesForMonth(mk);
-      const inc = mEntries.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-      const exp = mEntries.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-      return { name, inc, exp };
-    });
-    const maxVal = Math.max(1, ...monthTotals.map(m => Math.max(m.inc, m.exp)));
-
-    const barW = 14, gap = 26, chartH = 160, baseline = chartH + 20;
-    const svgW = monthTotals.length * gap + 20;
-    const bars = monthTotals.map((m, i) => {
-      const x = 20 + i * gap;
-      const incH = (m.inc / maxVal) * chartH;
-      const expH = (m.exp / maxVal) * chartH;
-      return `
-        <rect x="${x}" y="${(baseline-incH).toFixed(1)}" width="${barW/2-1}" height="${incH.toFixed(1)}" fill="#2D6A4F" rx="1"/>
-        <rect x="${x+barW/2}" y="${(baseline-expH).toFixed(1)}" width="${barW/2-1}" height="${expH.toFixed(1)}" fill="#B5481F" rx="1"/>
-        <text x="${x+barW/2}" y="${baseline+14}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="#5A5A52">${m.name}</text>
-      `;
-    }).join('');
-
-    // category totals across the whole year (expenses only)
-    const byCat = {};
-    yearEntries.filter(e=>e.type==='expense').forEach(e => { byCat[e.cat] = (byCat[e.cat]||0) + e.amount; });
-    const catTotal = Object.values(byCat).reduce((a,b)=>a+b,0);
-    const catRows = Object.keys(byCat).sort((a,b)=>byCat[b]-byCat[a]).map(catId => {
-      const pct = catTotal > 0 ? (byCat[catId]/catTotal*100) : 0;
-      return `
-        <div class="year-cat-row">
-          <span class="year-cat-swatch" style="background:${catColor(catId)};"></span>
-          <span class="year-cat-name">${escapeHTML(catName(catId))}</span>
-          <span class="year-cat-bar-track"><span class="year-cat-bar-fill" style="width:${pct.toFixed(1)}%; background:${catColor(catId)};"></span></span>
-          <span class="year-cat-amt num">${fmt(byCat[catId])}</span>
-        </div>
-      `;
-    }).join('') || `<div class="no-jars">No expenses logged yet in ${state.currentYear}.</div>`;
-
-    wrap.innerHTML = `
-      <div class="summary-row">
-        <div class="stat-card income">
-          <div class="label">Annual Income</div>
-          <div class="value num">${fmt(income)}</div>
-        </div>
-        <div class="stat-card expense">
-          <div class="label">Annual Spent</div>
-          <div class="value num">${fmt(expense)}</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Annual Net</div>
-          <div class="value num ${net>=0?'positive':'negative'}">${fmt(net)}</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Yearly Budget</div>
-          <div class="value num">${fmt(totalBudget)}</div>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-bottom:22px;">
-        <div class="panel-head">
-          <h2>${state.currentYear} at a Glance</h2>
-          <span style="display:flex; gap:14px; font-size:11.5px; color:var(--ink-soft);">
-            <span><span style="display:inline-block;width:8px;height:8px;background:#2D6A4F;border-radius:2px;margin-right:4px;"></span>Income</span>
-            <span><span style="display:inline-block;width:8px;height:8px;background:#B5481F;border-radius:2px;margin-right:4px;"></span>Expense</span>
-          </span>
-        </div>
-        <div style="padding: 18px; overflow-x:auto;">
-          <svg viewBox="0 0 ${svgW} ${baseline+24}" style="width:100%; min-width:520px; height:200px;">
-            ${bars}
-          </svg>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Where ${state.currentYear} Went</h2>
-        </div>
-        <div style="padding: 14px 18px;">
-          ${catRows}
-        </div>
-      </div>
-    `;
-  }
-
-  /* ---------------- Event wiring ---------------- */
-  function updateCatInputState(){
-    const catSelect = document.getElementById('catInput');
-    const label = document.getElementById('catLabel');
-    if(currentType === 'income'){
-      catSelect.disabled = true;
-      catSelect.value = '';
-      if(label) label.textContent = 'Category (not needed for income)';
-    }else{
-      catSelect.disabled = false;
-      if(!catSelect.value && catSelect.options.length){
-        catSelect.selectedIndex = 0;
-      }
-      if(label) label.textContent = 'Category';
-    }
-  }
-
-  document.getElementById('typeToggle').addEventListener('click', (ev) => {
-    const btn = ev.target.closest('button');
-    if(!btn) return;
-    currentType = btn.getAttribute('data-type');
-    document.querySelectorAll('#typeToggle button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    updateCatInputState();
-  });
-
-  document.getElementById('dateInput').value = todayISO();
-  updateCatInputState();
-
-  document.getElementById('addEntryBtn').addEventListener('click', () => {
-    const desc = document.getElementById('descInput').value.trim();
-    const amount = Number(document.getElementById('amtInput').value);
-    const cat = document.getElementById('catInput').value;
-    const date = document.getElementById('dateInput').value || todayISO();
-
-    if(!amount || amount <= 0){
-      showToast('Enter an amount greater than zero.');
-      return;
-    }
-    if(currentType === 'expense' && !cat){
-      showToast('Pick a category for this expense.');
-      return;
-    }
-
-    state.entries.push({
-      id: uid(),
-      date,
-      desc,
-      amount,
-      type: currentType,
-      cat: currentType === 'expense' ? cat : 'income'
-    });
-
-    // jump to that entry's month/year if different
-    state.currentMonth = monthKey(date);
-    const entryYear = yearOf(state.currentMonth);
-    if(!state.years.includes(entryYear)){ state.years.push(entryYear); state.years.sort(); }
-    state.currentYear = entryYear;
-
-    document.getElementById('descInput').value = '';
-    document.getElementById('amtInput').value = '';
-    document.getElementById('descInput').focus();
-
-    renderAll();
-  });
-
-  // allow Enter key in description/amount to submit
-  ['descInput','amtInput'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', (e) => {
-      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addEntryBtn').click(); }
-    });
-  });
-
-  function smartDefaultDate(){
-    // If we're viewing the real current month, default to today.
-    // Otherwise default to the 1st of whichever month/year is currently selected.
-    if(state.currentMonth === thisMonthKey()){
-      return todayISO();
-    }
-    return state.currentMonth + '-01';
-  }
-
-  function wireInlineAddForm({ toggleBtnId, formId, cancelBtnId, onSubmit, dateFieldId }){
-    const toggleBtn = document.getElementById(toggleBtnId);
-    const form = document.getElementById(formId);
-    const cancelBtn = document.getElementById(cancelBtnId);
-
-    toggleBtn.addEventListener('click', () => {
-      form.hidden = !form.hidden;
-      if(!form.hidden){
-        if(dateFieldId){
-          const dateField = document.getElementById(dateFieldId);
-          if(dateField && !dateField.value){ dateField.value = smartDefaultDate(); }
-        }
-        const firstInput = form.querySelector('input');
-        if(firstInput) firstInput.focus();
-      }
-    });
-    cancelBtn.addEventListener('click', () => {
-      form.reset();
-      form.hidden = true;
-    });
-    form.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      const ok = onSubmit(form);
-      if(ok !== false){
-        form.reset();
-        form.hidden = true;
-      }
-    });
-  }
-
-  wireInlineAddForm({
-    toggleBtnId: 'addGoalBtn',
-    formId: 'goalForm',
-    cancelBtnId: 'goalFormCancel',
-    onSubmit: (form) => {
-      const name = document.getElementById('goalNameInput').value.trim();
-      const target = Number(document.getElementById('goalTargetInput').value);
-      if(!name || !target || target <= 0){
-        showToast('Enter a goal name and a target amount above zero.');
-        return false;
-      }
-      state.goals.push({ id: uid(), name, target, saved: 0 });
-      renderGoals();
-    }
-  });
-
-  wireInlineAddForm({
-    toggleBtnId: 'addLentBtn',
-    formId: 'lentForm',
-    cancelBtnId: 'lentFormCancel',
-    dateFieldId: 'lentDateInput',
-    onSubmit: (form) => {
-      const person = document.getElementById('lentPersonInput').value.trim();
-      const amount = Number(document.getElementById('lentAmountInput').value);
-      const date = document.getElementById('lentDateInput').value || todayISO();
-      if(!person || !amount || amount <= 0){
-        showToast('Enter a name and an amount above zero.');
-        return false;
-      }
-      state.lent.push({ id: uid(), person, amount, returned: 0, date });
-      logLoanEntry('expense', `Lent to ${person}`, amount, date);
-      renderAll();
-      showToast(`Logged ₹${amount} lent to ${person} as an expense ✓`);
-    }
-  });
-
-  wireInlineAddForm({
-    toggleBtnId: 'addBorrowedBtn',
-    formId: 'borrowedForm',
-    cancelBtnId: 'borrowedFormCancel',
-    dateFieldId: 'borrowedDateInput',
-    onSubmit: (form) => {
-      const person = document.getElementById('borrowedPersonInput').value.trim();
-      const amount = Number(document.getElementById('borrowedAmountInput').value);
-      const date = document.getElementById('borrowedDateInput').value || todayISO();
-      if(!person || !amount || amount <= 0){
-        showToast('Enter a name and an amount above zero.');
-        return false;
-      }
-      state.borrowed.push({ id: uid(), person, amount, repaid: 0, date });
-      logLoanEntry('income', `Borrowed from ${person}`, amount, date);
-      renderAll();
-      showToast(`Logged ₹${amount} borrowed from ${person} as income ✓`);
-    }
-  });
-
-  document.getElementById('chartTabs').addEventListener('click', (ev) => {
-    const btn = ev.target.closest('.chart-tab');
-    if(!btn) return;
-    currentChart = btn.getAttribute('data-chart');
-    document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderChart();
-  });
-
-  document.getElementById('saveBtn').addEventListener('click', handleSaveClick);
-  document.getElementById('loadBtn').addEventListener('click', () => {
-    if(FS_ACCESS_SUPPORTED){
-      openLinkedFile();
-    }else{
-      document.getElementById('fileInput').click();
-    }
-  });
-  document.getElementById('fileInput').addEventListener('change', (ev) => {
-    const file = ev.target.files[0];
-    if(file) loadFromFile(file);
-    ev.target.value = '';
-  });
-  if(FS_ACCESS_SUPPORTED){
-    document.getElementById('linkFileBtn').addEventListener('click', linkSaveFile);
-  }
-  updateSaveLoadUI();
-
-  /* ---------------- Module navigation ---------------- */
-  let currentModule = 'dashboard';
-  const MODULE_IDS = ['dashboard','yearview','transactions','jars','goals','owedtome','iowe'];
-
-  function switchModule(mod){
-    if(!MODULE_IDS.includes(mod)) return;
-    currentModule = mod;
-    MODULE_IDS.forEach(id => {
-      const el = document.getElementById('module-' + id);
-      if(el) el.hidden = (id !== mod);
-    });
-    document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-module') === mod);
-    });
-    if(mod === 'yearview'){
-      renderYearView();
-    }
-    // close mobile sidebar drawer if open
-    document.getElementById('sidebar').classList.remove('open');
-    window.scrollTo({top: 0, behavior: 'instant'});
-  }
-
-  document.querySelectorAll('.nav-item, .bottom-nav-item').forEach(btn => {
-    btn.addEventListener('click', () => switchModule(btn.getAttribute('data-module')));
-  });
-
-  /* ---------------- iOS / unsupported-browser auto-save banner ---------------- */
-  if(!FS_ACCESS_SUPPORTED){
-    const banner = document.getElementById('iosAutosaveBanner');
-    if(banner) banner.hidden = false;
-  }
-
-  /* ---------------- Init ---------------- */
-  switchModule('dashboard');
-  renderAll();
-
-})();
-</script>
+  </footer>
 </body>
 </html>
